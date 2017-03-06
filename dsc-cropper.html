@@ -1,0 +1,191 @@
+<script src="../cropperjs/dist/cropper.min.js"></script>
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-icons/image-icons.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../polymer/polymer.html">
+
+
+<dom-module id="dsc-cropper">
+  <link rel="import" type="css" href="../cropperjs/dist/cropper.min.css">
+
+  <template>
+    <style>
+      :host{
+        display: block;
+        width: 100%;
+      }
+      #wrapper {
+        display: block;
+      }
+      #image {
+        max-width: 100%;
+      }
+
+      #size-label {
+        text-align: right;
+        padding-bottom: 5px;
+      }
+
+      .rotate90 {
+        -ms-transform: rotate(90deg); /* IE 9 */
+        -webkit-transform: rotate(90deg); /* Chrome, Safari, Opera */
+        transform: rotate(90deg);
+      }
+    </style>
+    <div>
+      <div id="wrapper">
+        <img id="image" src="[[src]]" on-load="render">
+      </div>
+      <div id="size-label">
+        <span id="width"></span> x <span id="height"></span> px
+      </div>
+
+      <paper-icon-button icon="icons:open-with" on-click="setDragModeMove" title="Drag mode move"></paper-icon-button>
+      <paper-icon-button icon="image:crop" on-click="setDragModeCrop" title="Drag mode crop"></paper-icon-button>
+
+      <paper-icon-button icon="icons:zoom-in" on-click="zoomIn" title="Zoom in"></paper-icon-button>
+      <paper-icon-button icon="icons:zoom-out" on-click="zoomOut" title="Zoom out"></paper-icon-button>
+
+      <paper-icon-button icon="image:rotate-left" on-click="rotateLeft" title="Rotate left"></paper-icon-button>
+      <paper-icon-button icon="image:rotate-right" on-click="rotateRight" title="Rotate right"></paper-icon-button>
+
+      <paper-icon-button icon="image:flip" on-click="scaleX" title="Flip horizontal"></paper-icon-button>
+      <paper-icon-button class="rotate90" icon="image:flip" on-click="scaleY" title="Flip vertical"></paper-icon-button>
+
+      <paper-icon-button icon="icons:refresh" on-click="reset" title="Reset"></paper-icon-button>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'dsc-cropper',
+
+      properties: {
+        id: {
+          type: String,
+        },
+
+        /**
+         * The URL of the image to be cropped
+         */
+        src: {
+          type: String,
+          reflectToAttribute: true
+        },
+
+        srcCrop: {
+          type: String,
+          reflectToAttribute: true
+        },
+      },
+
+      render: function () {
+        if (!window.Cropper) {
+          return console.error('Cropper has not been initialized');
+        }
+
+        if (this._cropper) {
+          this._cropper.destroy();
+        }
+
+        // The options object as specified in https://github.com/fengyuanchen/cropperjs#options
+        var cropjsOptions = {
+          //aspectRatio: 16 / 9,
+          aspectRatio: 1,
+        };
+
+        var options = Object.assign({}, cropjsOptions);
+        var wrapper = this.$.wrapper;
+
+        options._ready = options.ready;
+        options.ready = function (e) {
+          wrapper.removeAttribute('style');
+          if (options._ready) {
+            return options._ready(e);
+          }
+        };
+
+        wrapper.setAttribute('style', 'max-height: ' + this.$.image.offsetHeight + 'px');
+
+        if (!this._scoped) {
+          this._scoped = true;
+          this.scopeSubtree(wrapper, true);
+        }
+
+        var that = this;
+
+        options.crop = function(e) {
+          that.$.width.textContent = parseInt(e.detail.width);
+          that.$.height.textContent = parseInt(e.detail.height);
+        }
+
+        this._cropper = new window.Cropper(this.$.image, options);
+        //this.listen(this, 'crop', 'crop');
+      },
+
+      /**
+       * Returns object crop data. Ex
+       * {height:384, rotate:0,scaleX:1, scaleY:1, width:384, x:128, y:48}
+       */
+      _getCropData: function(key) {
+        var data = this._cropper.getData();
+        if (key && typeof data[key] != 'undefined') {
+          return data[key];
+        }
+        return data;
+      },
+
+      setDragModeMove: function() {
+        this._cropper.setDragMode('move')
+      },
+
+      setDragModeCrop: function() {
+        this._cropper.setDragMode('crop')
+      },
+
+      zoomIn: function() {
+        this._cropper.zoom(0.1);
+      },
+
+      zoomOut: function() {
+        this._cropper.zoom(-0.1);
+      },
+
+      reset: function() {
+        this._cropper.reset();
+      },
+
+      rotateLeft: function() {
+        this._cropper.rotate(-45);
+      },
+
+      rotateRight: function() {
+        this._cropper.rotate(45);
+      },
+
+      scaleX: function() {
+        var x = this._getCropData('scaleX');
+        this._cropper.scaleX(x * -1);
+      },
+
+      scaleY: function() {
+        var y = this._getCropData('scaleY');
+        this._cropper.scaleY(y * -1);
+      },
+
+      crop: function () {
+        var data = this._cropper.getCroppedCanvas().toDataURL('image/jpeg');
+        var result = {
+          id: this.id,
+          src: data,
+          width: this._getCropData('width'),
+          height: this._getCropData('height'),
+        };
+        this.fire('crop-result', result);
+      },
+    });
+  </script>
+</dom-module>
