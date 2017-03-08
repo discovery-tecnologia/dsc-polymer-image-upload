@@ -1,9 +1,11 @@
 <script src="../cropperjs/dist/cropper.min.js"></script>
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../iron-icons/image-icons.html">
 <link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../paper-toast/paper-toast.html">
 <link rel="import" href="../polymer/polymer.html">
 
 
@@ -23,9 +25,14 @@
         max-width: 100%;
       }
 
+      #details {
+        display: flex;
+        align-items: flex-end;
+        padding-bottom: 10px;
+      }
+
       #size-label {
-        text-align: right;
-        padding-bottom: 5px;
+        margin-left: auto;
       }
 
       .rotate90 {
@@ -35,11 +42,26 @@
       }
     </style>
     <div>
-      <div id="wrapper">
-        <img id="image" src="[[src]]" on-load="render">
+      <div id="details">
+        <div id="file-name">
+          <paper-input
+            id="name"
+            required
+            value="{{name}}"
+            maxlength="50"
+            auto-validate
+            pattern="[a-zA-Z0-9_-]*"
+            error-message="Invalid file name">
+            <div suffix>{{ext}}</div>
+          </paper-input>
+        </div>
+        <div id="size-label">
+          <span id="width">{{width}}</span> x <span id="height">{{height}}</span> px
+        </div>
       </div>
-      <div id="size-label">
-        <span id="width"></span> x <span id="height"></span> px
+
+      <div id="wrapper">
+        <img id="image" src="[[src]]" on-load="_render">
       </div>
 
       <paper-icon-button icon="icons:open-with" on-click="setDragModeMove" title="Drag mode move"></paper-icon-button>
@@ -55,7 +77,20 @@
       <paper-icon-button class="rotate90" icon="image:flip" on-click="scaleY" title="Flip vertical"></paper-icon-button>
 
       <paper-icon-button icon="icons:refresh" on-click="reset" title="Reset"></paper-icon-button>
+
+      <paper-input
+        id="description"
+        label="Description"
+        value="{{description}}"
+        maxlength="100"
+        auto-validate
+        pattern="[a-zA-Z0-9 ]*"
+        error-message="Invalid description">
+      </paper-input>
+
+      <paper-toast id="toast" class="dsc-toast"></paper-toast>
     </div>
+
   </template>
 
   <script>
@@ -64,26 +99,86 @@
       is: 'dsc-cropper',
 
       properties: {
+
+        /**
+         * Object ID
+         */
         id: {
           type: String,
         },
 
         /**
-         * The URL of the image to be cropped
+         * File mime type
+         */
+        type: {
+          type: String,
+        },
+
+        /**
+         * Image file name
+         */
+        name: {
+          type: String,
+        },
+
+        ext: {
+          type: String,
+        },
+
+        /**
+         * Image description
+         */
+        description: {
+          type: String,
+        },
+
+        /**
+         * The URL of the image to be cropped.
          */
         src: {
           type: String,
           reflectToAttribute: true
         },
 
+        /**
+         * Src image crop result.
+         */
         srcCrop: {
           type: String,
           reflectToAttribute: true
         },
+
+        /**
+         * Width selection reflect.
+         */
+        width: {
+          type: Number,
+        },
+
+        /**
+         * Height selection reflect.
+         */
+        height: {
+          type: Number,
+        },
       },
 
-      render: function () {
-        if (!window.Cropper) {
+      ready: function() {
+        if (!String.format) {
+          String.format = function(format) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            return format.replace(/{(\d+)}/g, function(match, number) {
+              return typeof args[number] != 'undefined'
+                ? args[number]
+                : match
+              ;
+            });
+          };
+        }
+      },
+
+      _render: function () {
+        if (! window.Cropper) {
           return console.error('Cropper has not been initialized');
         }
 
@@ -93,8 +188,7 @@
 
         // The options object as specified in https://github.com/fengyuanchen/cropperjs#options
         var cropjsOptions = {
-          //aspectRatio: 16 / 9,
-          aspectRatio: 1,
+          aspectRatio: this.aspectRatio,
         };
 
         var options = Object.assign({}, cropjsOptions);
@@ -118,12 +212,80 @@
         var that = this;
 
         options.crop = function(e) {
-          that.$.width.textContent = parseInt(e.detail.width);
-          that.$.height.textContent = parseInt(e.detail.height);
+          //that.$.width.textContent = parseInt(e.detail.width);
+          //that.$.height.textContent = parseInt(e.detail.height);
+          that.width = parseInt(e.detail.width);
+          that.height = parseInt(e.detail.height);
         }
 
         this._cropper = new window.Cropper(this.$.image, options);
         //this.listen(this, 'crop', 'crop');
+        // parse file name
+        var dotPos = this.name.lastIndexOf('.');
+        var name = this.name.substr(0, dotPos);
+        var ext = this.name.substr(dotPos, this.name.legth);
+        this.name = name;
+        this.ext = ext
+      },
+
+      /**
+       * Validate all.
+       */
+      _validate: function() {
+        var messages = [];
+        if (this.width > this.maxWidth) {
+          messages.push(String.format('Image requires maximum width {0}px', this.maxWidth));
+        }
+        if (this.width < this.minWidth) {
+          messages.push(String.format('Image requires minimum width {0}px', this.minWidth));
+        }
+        if (this.height > this.maxHeight) {
+          messages.push(String.format('Image requires maximum height {0}px', this.maxHeight));
+        }
+        if (this.height < this.minHeight) {
+          messages.push(String.format('Image requires minimum height {0}px', this.minHeight));
+        }
+        if (! this.$.name.validate()) {
+          messages.push('Invalid name');
+          this.$.name.focus();
+        }
+        if (! this.$.description.validate()) {
+          messages.push('Invalid description');
+          this.$.description.focus();
+        }
+        if (messages.length > 0) {
+          var strMessage = '';
+          for (var i = 0; i < messages.length; i++) {
+            strMessage += messages[i] + '<br>';
+          }
+          this._showToast(strMessage, 'red');
+          return false;
+        }
+        return true;
+      },
+
+      /**
+       * Show message for user
+       *
+       * @param {String} message message text.
+       * @param {String} color string override background color toast.
+       *
+       * @return {undefined}
+       */
+      _showToast: function(message, color) {
+        var toast = this.$.toast;
+        /*if(message == null) {
+            message = this.localize('success_message');
+        }*/
+        //toast.text = message;
+        toast.innerHTML = message;
+
+        this.customStyle['--paper-toast-background-color'] = color == null
+        ? 'green' :
+            color;
+
+        Polymer.updateStyles();
+        toast.show();
       },
 
       /**
@@ -177,14 +339,22 @@
       },
 
       crop: function () {
-        var data = this._cropper.getCroppedCanvas().toDataURL('image/jpeg');
+        var data = this._cropper.getCroppedCanvas().toDataURL(this.type);
+        var bytes = Math.round(data.length * 3 / 4);
+        // var kbytes =  Math.round(bytes/1024) + 'KB';
         var result = {
           id: this.id,
           src: data,
-          width: this._getCropData('width'),
-          height: this._getCropData('height'),
+          width: parseInt(this._getCropData('width')),
+          height: parseInt(this._getCropData('height')),
+          size: bytes,
+          name: this.name + this.ext,
+          description: this.description
         };
-        this.fire('crop-result', result);
+
+        if (this._validate() == true) {
+          this.fire('crop-result', result);
+        }
       },
     });
   </script>

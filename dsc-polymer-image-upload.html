@@ -52,7 +52,6 @@
         -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         -webkit-tap-highlight-color: transparent;
         font: inherit;
-        text-transform: uppercase;
         outline-width: 0;
         border-radius: 3px;
         -moz-user-select: none;
@@ -83,6 +82,10 @@
         color: #666;
       }
 
+      .text-description {
+        font-size: 10px;
+      }
+
       .icons-container{
         margin-left: auto;
       }
@@ -90,12 +93,12 @@
 
     <div id="dsc-image-upoload">
 
-      <input type="file" id="browse" hidden multiple on-change="readFiles">
+      <input type="file" id="browse" hidden multiple on-change="_readFiles">
 
       <div id="preview"></div>
 
       <div id="upload-header">
-        <paper-button raised class="indigo" on-click="selectFiles">
+        <paper-button raised class="indigo" on-click="_selectFiles">
           <iron-icon icon="icons:file-upload"></iron-icon>
           UPLOAD FILES
           </paper-button>
@@ -107,11 +110,9 @@
       </div>
 
       <paper-dialog id="dialog" modal>
-        <h3>Image edit</h3>
-        <hr>
         <div id="container"></div>
         <div class="buttons">
-          <paper-button id="dialog-crop-confirm" raised><iron-icon icon="check"></iron-icon>crop</paper-button>
+          <paper-button id="dialog-crop-confirm" raised><iron-icon icon="check"></iron-icon>Apply</paper-button>
           <paper-button dialog-confirm autofocus>Cancel</paper-button>
         </div>
       </paper-dialog>
@@ -125,20 +126,73 @@
 
       properties: {
 
+        /**
+         * Maximum number of files.
+         */
         maxFiles: {
           type: Number,
           default: 5,
         },
 
+        /**
+         * Max file size in bytes
+         */
         maxFileSize: {
           type: Number,
-          default: 100000,
+          default: 5 * 1024, // 5MB
         },
 
+        /**
+         * Min image width in px.
+         */
+        minWidth: {
+          type: Number,
+          value: 320,
+        },
+
+        /**
+         * Max image width in px.
+         */
+        maxWidth: {
+          type: Number,
+          value: 1920,
+        },
+
+        /**
+         * Min image height in px.
+         */
+        minHeigth: {
+          type: Number,
+          value: 240,
+        },
+
+        /**
+         * Max image height in px.
+         */
+        maxHeigth: {
+          type: Number,
+          value: 1080,
+        },
+
+        /**
+         * Force aspect ratio. Ex: 16/9, 4/3, 1, 2/3 or 'Nan' for free.
+         */
+        aspectRatio: {
+          type: Number,
+          value: 16/9,
+        },
+
+        /**
+         * Flag to image file parse.
+         */
         useBlob: {
           type: Boolean,
         },
 
+        /**
+         * Cropper plugin object.
+         * @see https://fengyuanchen.github.io/cropperjs/
+         */
         dscCropper: {
           type: Object,
         },
@@ -146,9 +200,17 @@
         /**
          * Array of images object data and info. Ex:
          *  [
-         *    {order: 1, src: "data:image/jpeg;base64,/9j/4AAQSkZJRg...", width: 640, heigth: 480, size: 198542, name: 'teste.jpg', type: 'jpg'},
-         *    {order: 2, src: "data:image/jpeg;base64,/9j/4AAQSkZJRg...", width: 640, heigth: 480, size: 198542, name: 'teste.jpg', type: 'jpg'},
-         *    {order: 3, src: "data:image/jpeg;base64,/9j/4AAQSkZJRg...", width: 640, heigth: 480, size: 198542, name: 'teste.jpg', type: 'jpg'}
+         *    {
+         *      order: 1,
+         *      src: "data:image/jpeg;base64,/9j/4AAQSkZJRgtgsrtgserfdhdfh...",
+         *      width: 640,
+         *      heigth: 480,
+         *      size: 198542,
+         *      name: 'teste.jpg',
+         *      type: 'image/jpg',
+         *      description: "Optional image description"
+         *    },
+         *    ...
          *  ]
          */
         items: {
@@ -158,19 +220,19 @@
 
       },
 
-      generateObjectId: function () {
+      _generateObjectId: function () {
         var timestamp = (new Date().getTime() / 1000 | 0).toString(16);
         return timestamp + 'xxxxxxxxxxxxxxxx'.replace(/[x]/g, function() {
             return (Math.random() * 16 | 0).toString(16);
         }).toLowerCase();
       },
 
-      selectFiles: function() {
+      _selectFiles: function() {
         this.$.browse.value = '';
         this.$.browse.click();
       },
 
-      readFiles: function(e) {
+      _readFiles: function(e) {
         var that = this;
         // Let's store the FileList Array into a variable:
         // https://developer.mozilla.org/en-US/docs/Web/API/FileList
@@ -193,8 +255,8 @@
             // The regex can also be expressed like: /\.(png|jpe?g|gif)$/i
             if ( (/\.(png|jpeg|jpg|gif)$/i).test(file.name) ) {
               // SUCCESS! It's an image!
-              // Send our image `file` to our `readImage` function!
-              that.readImage(file);
+              // Send our image `file` to our `_readImage` function!
+              that._readImage(file);
             } else {
               errors += file.name +" Unsupported Image extension\n";
             }
@@ -206,7 +268,7 @@
         }
       },
 
-      readImage: function(file) {
+      _readImage: function(file) {
         var that = this;
         // Create a new FileReader instance
         // https://developer.mozilla.org/en/docs/Web/API/FileReader
@@ -258,7 +320,7 @@
       },
 
       addItem: function(img, imgInfo) {
-        imgInfo.id = this.generateObjectId();
+        imgInfo.id = this._generateObjectId();
         this.items.push(
           imgInfo
         );
@@ -268,7 +330,6 @@
       },
 
       renderItem: function(img, imgInfo) {
-        console.log('renderItem');
         // div.upload-item
         var divItem = document.createElement('div');
         divItem.setAttribute('class', 'upload-item');
@@ -289,15 +350,22 @@
         divDetails.setAttribute('class', 'text-details');
         divDetails.innerText = imgInfo.width + 'x' + imgInfo.height + ' (' + Math.round(imgInfo.size/1024) + 'KB' + ')';
         divText.appendChild(divDetails);
+        // description
+        if (typeof imgInfo.description != 'undefined') {
+          divDescription = document.createElement('div');
+          divDescription.setAttribute('class', 'text-description');
+          divDescription.innerText = imgInfo.description;
+          divText.appendChild(divDescription);
+        }
         // div.icons-container
         var divIcons = document.createElement('div');
         divIcons.setAttribute('class', 'icons-container');
         // paper-icon-button (edit)
         var buttonEdit = document.createElement('paper-icon-button');
-        buttonEdit.setAttribute('icon', 'icons:build');
+        buttonEdit.setAttribute('icon', 'icons:create');
         buttonEdit.setAttribute('title', 'Edit image');
         buttonEdit.setAttribute('class', 'teste');
-        this.listen(buttonEdit, 'tap', 'openCropDialog');
+        this.listen(buttonEdit, 'tap', '_openCropDialog');
         divIcons.appendChild(buttonEdit);
         // paper-icon-button (edit)
         var buttonRemove = document.createElement('paper-icon-button');
@@ -321,7 +389,6 @@
        * On component ready.
        */
       ready: function() {
-        //document.getElementById("input-files").addEventListener("change", this._readFiles);
         window.URL = window.URL || window.webkitURL;
         this.useBlob = false && window.URL; // Set to `true` to use Blob instead of Data-URL
       },
@@ -331,10 +398,14 @@
         var item = e.detail;
         console.log(item);
         this._updateItem(item);
+        this.$.dialog.close();
         // TODO: remove listeners
       },
 
-      openCropDialog: function(e) {
+      /**
+       * Edit item
+       */
+      _openCropDialog: function(e) {
         var thisButton = e.currentTarget;
         var parent = thisButton.closest(".upload-item");
         var attrId = parent.getAttribute('id');
@@ -344,7 +415,15 @@
         this.$.dialog.open();
         this.dscCropper = document.createElement("dsc-cropper");
         this.dscCropper.id = item.id;
+        this.dscCropper.type = item.type;
+        this.dscCropper.name = item.name;
+        this.dscCropper.description = item.description;
         this.dscCropper.src = item.src;
+        this.dscCropper.aspectRatio = this.aspectRatio;
+        this.dscCropper.minWidth = this.minWidth;
+        this.dscCropper.maxWidth = this.aspectRamaxWidthtio;
+        this.dscCropper.minHeigth = this.minHeigth;
+        this.dscCropper.maxHeigth = this.maxHeigth;
         this.dscCropper.regions = this.officesRegions;
         this.dscCropper.cities = this.officesCities;
         this.listen(this.dscCropper, 'crop-result', '_onCropResult');
@@ -354,6 +433,9 @@
         Polymer.updateStyles();
       },
 
+      /**
+       * Dialog Aplly click
+       */
       crop: function() {
         this.dscCropper.crop();
       },
@@ -374,6 +456,9 @@
             this.items[i].src = item.src;
             this.items[i].width = item.width;
             this.items[i].height = item.height;
+            this.items[i].size = item.size;
+            this.items[i].name = item.name;
+            this.items[i].description = item.description;
             // update ui
             var currentUi = Polymer.dom(this.root).querySelector('#item-' + item.id);
             /*var img = Polymer.dom(currentUi).querySelector('img');
