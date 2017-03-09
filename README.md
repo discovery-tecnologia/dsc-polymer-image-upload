@@ -52,3 +52,9 @@ Check sintax and execute selenium tests.
 ```
 $ npm test
 ```
+
+## TODO
+ * reorder
+ * image preview
+ * contrast and brightness
+ * validate aspect ratio

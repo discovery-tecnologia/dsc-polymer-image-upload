@@ -30,9 +30,13 @@
         background-color: var(--paper-indigo-500);
         color: white;
         --paper-button-raised-keyboard-focus: {
-          background-color: var(--paper-pink-a200) !important;
+          background-color: var(--paper-indigo-a300) !important;
           color: white !important;
         };
+      }
+
+      paper-button.indigo[disabled] {
+        background: #ccc !important;
       }
 
       #label-qtd{
@@ -73,6 +77,15 @@
         height: 60px;
       }
 
+      .high-width .width,
+      .low-width .width,
+      .high-height .height,
+      .low-height .height,
+      .high-size .size,
+      .repeated-name .name{
+        color: red;
+      }
+
       .text-container{
         padding-left: 10px;
       }
@@ -89,6 +102,12 @@
       .icons-container{
         margin-left: auto;
       }
+
+      #footer {
+        padding-top: 15px;
+        font-size: 11px;
+        color: #666;
+      }
     </style>
 
     <div id="dsc-image-upoload">
@@ -98,16 +117,23 @@
       <div id="preview"></div>
 
       <div id="upload-header">
-        <paper-button raised class="indigo" on-click="_selectFiles">
+        <paper-button disabled="[[qtdLimitReached]]" raised class="custom indigo" on-click="_selectFiles">
           <iron-icon icon="icons:file-upload"></iron-icon>
-          UPLOAD FILES
+          SELECT FILES
           </paper-button>
-        <div id="label-qtd">2 of 10</div>
+        <div id="label-qtd">{{qtdFiles}} of {{maxFiles}}</div>
       </div>
 
-      <div id="itens-container">
+      <div id="itens-container"></div>
 
-      </div>
+      <template is="dom-if" if="{{hasImages}}">
+        <div id="footer">
+          The resulting images must have the following attributes:<br>
+          - <b>Width</b> between <b>{{minWidth}}</b> and <b>{{maxWidth}}</b> px;<br>
+          - <b>Height</b> between <b>{{minHeight}}</b> and <b>{{maxHeight}}</b> px;<br>
+          - Max file <b>size</b> <b>{{maxFileSize}}</b> bytes;
+        </div>
+      </template>
 
       <paper-dialog id="dialog" modal>
         <div id="container"></div>
@@ -126,12 +152,28 @@
 
       properties: {
 
+        hasImages: {
+          type: Boolean,
+          value: false,
+        },
+
+        qtdFiles: {
+          type: Number,
+          value: 0,
+          observer: '_qtdFilesChanged',
+        },
+
+        qtdLimitReached: {
+          type: Boolean,
+          value: false,
+        },
+
         /**
          * Maximum number of files.
          */
         maxFiles: {
-          type: Number,
-          default: 5,
+          type: String,
+          value: 5,
         },
 
         /**
@@ -139,7 +181,7 @@
          */
         maxFileSize: {
           type: Number,
-          default: 5 * 1024, // 5MB
+          value: 5 * 1024, // 5MB
         },
 
         /**
@@ -161,7 +203,7 @@
         /**
          * Min image height in px.
          */
-        minHeigth: {
+        minHeight: {
           type: Number,
           value: 240,
         },
@@ -169,7 +211,7 @@
         /**
          * Max image height in px.
          */
-        maxHeigth: {
+        maxHeight: {
           type: Number,
           value: 1080,
         },
@@ -204,11 +246,12 @@
          *      order: 1,
          *      src: "data:image/jpeg;base64,/9j/4AAQSkZJRgtgsrtgserfdhdfh...",
          *      width: 640,
-         *      heigth: 480,
+         *      height: 480,
          *      size: 198542,
          *      name: 'teste.jpg',
          *      type: 'image/jpg',
          *      description: "Optional image description"
+         *      errors: ['low-width', 'high-size']
          *    },
          *    ...
          *  ]
@@ -230,6 +273,11 @@
       _selectFiles: function() {
         this.$.browse.value = '';
         this.$.browse.click();
+      },
+
+      _qtdFilesChanged: function() {
+        this.hasImages = (this.qtdFiles > 0);
+        this.qtdLimitReached = (this.qtdFiles >= this.maxFiles);
       },
 
       _readFiles: function(e) {
@@ -269,12 +317,14 @@
       },
 
       _readImage: function(file) {
+        console.log(this.qtdLimitReached);
         var that = this;
         // Create a new FileReader instance
         // https://developer.mozilla.org/en/docs/Web/API/FileReader
         var reader = new FileReader();
         // Once a file is successfully readed:
         reader.addEventListener("load", function () {
+
           // At this point `reader.result` contains already the Base64 Data-URL
           // and we've could immediately show an image using
           // `elPreview.insertAdjacentHTML("beforeend", "<img src='"+ reader.result +"'>");`
@@ -315,20 +365,24 @@
 
       },
 
-      removeItem: function() {
-        console.log('REMOVE ITEM');
-      },
-
+      /**
+       * Add item to array and call render ui.
+       */
       addItem: function(img, imgInfo) {
-        imgInfo.id = this._generateObjectId();
-        this.items.push(
-          imgInfo
-        );
-
-        var divItem = this.renderItem(img, imgInfo);
-        this.$$('#itens-container').appendChild(divItem);
+        if (this.qtdLimitReached === false) {
+          imgInfo.id = this._generateObjectId();
+          this.items.push(imgInfo);
+          var divItem = this.renderItem(img, imgInfo);
+          this.$$('#itens-container').appendChild(divItem);
+          this.qtdFiles ++;
+          // revalidate
+          this._validateAll();
+        }
       },
 
+      /**
+       * Render visual control item.
+       */
       renderItem: function(img, imgInfo) {
         // div.upload-item
         var divItem = document.createElement('div');
@@ -343,12 +397,29 @@
         divText.setAttribute('class', 'text-container');
         // name
         var divName = document.createElement('div');
+        divName.setAttribute('class', 'name');
         divName.innerText = imgInfo.name;
         divText.appendChild(divName);
         // details
         var divDetails = document.createElement('div');
         divDetails.setAttribute('class', 'text-details');
-        divDetails.innerText = imgInfo.width + 'x' + imgInfo.height + ' (' + Math.round(imgInfo.size/1024) + 'KB' + ')';
+        // span.width
+        var spanWidth = document.createElement('span');
+        spanWidth.setAttribute('class', 'width');
+        spanWidth.innerText = imgInfo.width;
+        // span.height
+        var spanHeight = document.createElement('span');
+        spanHeight.setAttribute('class', 'height');
+        spanHeight.innerText = imgInfo.height;
+        // span.size
+        var spanSize = document.createElement('span');
+        spanSize.setAttribute('class', 'size');
+        spanSize.innerText = ' (' + Math.round(imgInfo.size/1024) + 'KB)'
+
+        divDetails.appendChild(spanWidth);
+        divDetails.appendChild(spanHeight);
+        divDetails.appendChild(spanSize);
+
         divText.appendChild(divDetails);
         // description
         if (typeof imgInfo.description != 'undefined') {
@@ -365,13 +436,13 @@
         buttonEdit.setAttribute('icon', 'icons:create');
         buttonEdit.setAttribute('title', 'Edit image');
         buttonEdit.setAttribute('class', 'teste');
-        this.listen(buttonEdit, 'tap', '_openCropDialog');
+        this.listen(buttonEdit, 'tap', '_editItem');
         divIcons.appendChild(buttonEdit);
         // paper-icon-button (edit)
         var buttonRemove = document.createElement('paper-icon-button');
         buttonRemove.setAttribute('icon', 'icons:clear');
         buttonRemove.setAttribute('title', 'Edit image');
-        this.listen(buttonRemove, 'tap', 'removeItem');
+        this.listen(buttonRemove, 'tap', '_removeItem');
         divIcons.appendChild(buttonRemove);
 
         divItem.appendChild(divImg);
@@ -381,8 +452,44 @@
         return divItem;
       },
 
-      validateItem: function(item) {
+      /**
+       * State to validade before submit.
+       */
+      isValid: function() {
+        // each all itens
+        for(var i = 0; i < this.items.length; i++) {
+          if (this.items[i].errors.length > 0) {
+            return false;
+          }
+        }
+        return true;
+      },
 
+      /**
+       * Set errors on items array and UI.
+       */
+      _validateAll: function() {
+        // each all itens
+        for(var i = 0; i < this.items.length; i++) {
+          // create array of erros
+          var arrStatus = [];
+          if (this.items[i].width > this.maxWidth) {arrStatus.push('high-width')}
+          if (this.items[i].width < this.minWidth) {arrStatus.push('low-width')}
+          if (this.items[i].height > this.maxHeight) {arrStatus.push('high-height')}
+          if (this.items[i].height < this.minHeight) {arrStatus.push('low-height')}
+          if (this.items[i].size > this.maxFileSize) {arrStatus.push('high-size')}
+          var count = 0;
+          for (var j = 0; j < this.items.length; j++) {
+            if (this.items[i].name == this.items[j].name) {
+              count ++;
+            }
+          }
+          if (count > 1) {arrStatus.push('repeated-name')}
+          // set errors on items objects
+          this.items[i].errors = arrStatus;
+          // set errors on UI
+          this.$$('#item-' + this.items[i].id).setAttribute('class', 'upload-item ' + arrStatus.join(' '));
+        }
       },
 
       /**
@@ -393,19 +500,20 @@
         this.useBlob = false && window.URL; // Set to `true` to use Blob instead of Data-URL
       },
 
+      /**
+       * Event caled after crop result ok.
+       */
       _onCropResult: function(e) {
-        console.log('CROP');
         var item = e.detail;
-        console.log(item);
         this._updateItem(item);
         this.$.dialog.close();
         // TODO: remove listeners
       },
 
       /**
-       * Edit item
+       * Edit item (open dialog)
        */
-      _openCropDialog: function(e) {
+      _editItem: function(e) {
         var thisButton = e.currentTarget;
         var parent = thisButton.closest(".upload-item");
         var attrId = parent.getAttribute('id');
@@ -422,8 +530,8 @@
         this.dscCropper.aspectRatio = this.aspectRatio;
         this.dscCropper.minWidth = this.minWidth;
         this.dscCropper.maxWidth = this.aspectRamaxWidthtio;
-        this.dscCropper.minHeigth = this.minHeigth;
-        this.dscCropper.maxHeigth = this.maxHeigth;
+        this.dscCropper.minHeight = this.minHeight;
+        this.dscCropper.maxHeight = this.maxHeight;
         this.dscCropper.regions = this.officesRegions;
         this.dscCropper.cities = this.officesCities;
         this.listen(this.dscCropper, 'crop-result', '_onCropResult');
@@ -434,12 +542,36 @@
       },
 
       /**
+       * Remove item from array of itens and UI.
+       */
+      _removeItem: function(e) {
+        var thisButton = e.currentTarget;
+        var parent = thisButton.closest(".upload-item");
+        var attrId = parent.getAttribute('id');
+        var id = attrId.replace('item-', '');
+        // remove array index
+        for(var i = 0; i < this.items.length; i++) {
+          if (this.items[i].id == id) {
+            this.items.splice(i, 1);
+          }
+        }
+        this.qtdFiles --;
+        // remove ui
+        parent.remove();
+        // revalidate
+        this._validateAll();
+      },
+
+      /**
        * Dialog Aplly click
        */
       crop: function() {
         this.dscCropper.crop();
       },
 
+      /**
+       * Return item object by ID
+       */
       _getItemById: function(id) {
         for(var i = 0; i < this.items.length; i++) {
           if (this.items[i].id == id) {
@@ -448,6 +580,9 @@
         }
       },
 
+      /**
+       * Update items array and UI after edit result.
+       */
       _updateItem: function(item) {
         // search item
         for(var i = 0; i < this.items.length; i++) {
@@ -461,14 +596,12 @@
             this.items[i].description = item.description;
             // update ui
             var currentUi = Polymer.dom(this.root).querySelector('#item-' + item.id);
-            /*var img = Polymer.dom(currentUi).querySelector('img');
-            img.src = item.src;
-            var textDetail = Polymer.dom(currentUi).querySelector('.text-details');
-            textDetail.innerText = item.width + 'x' + item.height + '(TODO: size)';*/
             var image  = new Image();
             image.src = item.src
             var divItem = this.renderItem(image, this.items[i]);
             currentUi.replaceWith(divItem);
+            // revalidate
+            this._validateAll();
           }
         }
       },
