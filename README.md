@@ -54,7 +54,7 @@ $ npm test
 ```
 
 ## TODO
- * reorder
  * image preview
  * contrast and brightness
  * validate aspect ratio
+ * separate item in new internal polymer element

@@ -1,11 +1,14 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../iron-icon/iron-icon.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-dialog/paper-dialog.html">
 <link rel="import" href="../neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../paper-spinner/paper-spinner.html">
+
 <link rel="import" href="dsc-cropper.html">
 
 <dom-module id="dsc-polymer-image-upload">
@@ -14,7 +17,7 @@
 
     <style>
       :host {
-
+        @apply(--paper-font-common-base);
       }
 
       #container {
@@ -26,11 +29,33 @@
         align-items: center;
       }
 
+      #btn-select {
+        margin-right: 20px;
+      }
+
+      paper-button.indigo {
+        --paper-button-ink-color: var(--paper-indigo-a200);
+        /* These could also be individually defined for each of the
+          specific css classes, but we'll just do it once as an example */
+        --paper-button-flat-keyboard-focus: {
+          background-color: var(--paper-indigo-a200);
+          color: white !important;
+        };
+        --paper-button-raised-keyboard-focus: {
+          background-color: var(--paper-indigo-a200) !important;
+          color: white !important;
+        };
+      }
+
+      paper-button.indigo:hover {
+        background-color: var(--paper-indigo-100);
+      }
+
       paper-button.indigo {
         background-color: var(--paper-indigo-500);
         color: white;
         --paper-button-raised-keyboard-focus: {
-          background-color: var(--paper-indigo-a300) !important;
+          background-color: var(--paper-indigo-a200) !important;
           color: white !important;
         };
       }
@@ -39,22 +64,18 @@
         background: #ccc !important;
       }
 
-      #label-qtd{
+      #label-qtd {
         margin-left: auto;
         padding-right: 7px;
       }
 
       .upload-item {
-        /*position: relative;*/
         display: flex;
         align-items: center;
-
         box-sizing: border-box;
         min-width: 5.14em;
         margin: 0 0.29em;
         background: #ffffff;
-        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        -webkit-tap-highlight-color: transparent;
         font: inherit;
         outline-width: 0;
         border-radius: 3px;
@@ -64,12 +85,8 @@
         user-select: none;
         z-index: 0;
         padding: 0.7em 0.57em;
-        font-family: 'Roboto', 'Noto', sans-serif;
-        -webkit-font-smoothing: antialiased;
         margin-top: 10px;
-        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
-                  0 1px 5px 0 rgba(0, 0, 0, 0.12),
-                  0 3px 1px -2px rgba(0, 0, 0, 0.2);
+        @apply(--shadow-elevation-2dp);
       }
 
       .upload-item img {
@@ -77,16 +94,28 @@
         height: 60px;
       }
 
+      .upload-item:first-of-type .btn-up {
+        display: none;
+      }
+
+      .upload-item:last-of-type .btn-down {
+        display: none;
+      }
+
+      .upload-item:last-of-type .btn-up {
+        margin-right: 40px;
+      }
+
       .high-width .width,
       .low-width .width,
       .high-height .height,
       .low-height .height,
       .high-size .size,
-      .repeated-name .name{
+      .repeated-name .name {
         color: red;
       }
 
-      .text-container{
+      .text-container {
         padding-left: 10px;
       }
 
@@ -99,47 +128,43 @@
         font-size: 10px;
       }
 
-      .icons-container{
+      .icons-container {
         margin-left: auto;
       }
 
-      #footer {
-        padding-top: 15px;
-        font-size: 11px;
-        color: #666;
-      }
     </style>
 
     <div id="dsc-image-upoload">
 
-      <input type="file" id="browse" hidden multiple on-change="_readFiles">
+      <input type="file" id="browse" hidden multiple on-change="_readFiles" accept="image/*">
 
       <div id="preview"></div>
 
       <div id="upload-header">
-        <paper-button disabled="[[qtdLimitReached]]" raised class="custom indigo" on-click="_selectFiles">
+        <paper-button id="btn-select" disabled="[[qtdLimitReached]]" raised class="custom indigo" on-click="_selectFiles">
           <iron-icon icon="icons:file-upload"></iron-icon>
           SELECT FILES
-          </paper-button>
-        <div id="label-qtd">{{qtdFiles}} of {{maxFiles}}</div>
+        </paper-button>
+        <paper-spinner active$="[[isLoading]]"></paper-spinner>
+        <div id="label-qtd">
+          <iron-icon id="help" icon="icons:help-outline"></iron-icon>
+          <paper-tooltip for="help" position="bottom" animation-delay="0">
+            The resulting images must have the following attributes:<br>
+            - <b>Width</b> between <b>{{minWidth}}</b> and <b>{{maxWidth}}</b> px;<br>
+            - <b>Height</b> between <b>{{minHeight}}</b> and <b>{{maxHeight}}</b> px;<br>
+            - Max file <b>size</b> <b>{{maxFileSize}}</b> bytes;
+          </paper-tooltip>
+          {{qtdFiles}} of {{maxFiles}}
+        </div>
       </div>
 
       <div id="itens-container"></div>
 
-      <template is="dom-if" if="{{hasImages}}">
-        <div id="footer">
-          The resulting images must have the following attributes:<br>
-          - <b>Width</b> between <b>{{minWidth}}</b> and <b>{{maxWidth}}</b> px;<br>
-          - <b>Height</b> between <b>{{minHeight}}</b> and <b>{{maxHeight}}</b> px;<br>
-          - Max file <b>size</b> <b>{{maxFileSize}}</b> bytes;
-        </div>
-      </template>
-
       <paper-dialog id="dialog" modal>
         <div id="container"></div>
         <div class="buttons">
-          <paper-button id="dialog-crop-confirm" raised><iron-icon icon="check"></iron-icon>Apply</paper-button>
           <paper-button dialog-confirm autofocus>Cancel</paper-button>
+          <paper-button id="dialog-crop-confirm">Apply</paper-button>
         </div>
       </paper-dialog>
 
@@ -152,17 +177,43 @@
 
       properties: {
 
+        /**
+         * Indicate loadind state to show spinner.
+         */
+        isLoading: {
+          type: Boolean,
+          value: false,
+        },
+
+        /**
+         * Flag indicate have one or more itens.
+         */
         hasImages: {
           type: Boolean,
           value: false,
         },
 
+        /**
+         * Total itens processed.
+         */
         qtdFiles: {
           type: Number,
           value: 0,
           observer: '_qtdFilesChanged',
         },
 
+        /**
+         * Quantity of files on rocessing queue.
+         */
+        qtdPendingFiles: {
+          type: Number,
+          value: 0,
+          observer: '_qtdPendingFilesChanged',
+        },
+
+        /**
+         * True if qtd limit 'maxFiles' is reached.
+         */
         qtdLimitReached: {
           type: Boolean,
           value: false,
@@ -259,10 +310,14 @@
         items: {
           type: Array,
           value: [],
-        }
+          notify: true,
+        },
 
       },
 
+      /**
+       * Generate new object ID.
+       */
       _generateObjectId: function () {
         var timestamp = (new Date().getTime() / 1000 | 0).toString(16);
         return timestamp + 'xxxxxxxxxxxxxxxx'.replace(/[x]/g, function() {
@@ -270,6 +325,96 @@
         }).toLowerCase();
       },
 
+      /**
+       * Return next order to nex item (last + 1).
+       */
+      _generateOrder: function() {
+        var lastOrder = 0;
+        if (this.items.length > 0){
+          lastOrder = Math.max.apply(null, this.items.map(function(o) {return o.order;}));
+        }
+        return lastOrder + 1;
+      },
+
+      /**
+       * Return item ID event of button click.
+       */
+      _getIdByButtonEvent: function(event) {
+        var thisButton = event.currentTarget;
+        var parent = thisButton.closest(".upload-item");
+        var attrId = parent.getAttribute('id');
+        var id = attrId.replace('item-', '');
+        return id;
+      },
+
+      /**
+       * Return item object by ID
+       */
+      _getItemById: function(id) {
+        for(var i = 0; i < this.items.length; i++) {
+          if (this.items[i].id == id) {
+            return this.items[i];
+          }
+        }
+      },
+
+      /**
+       * Down one position (items must be preordered before changing position).
+       */
+      _onDownItem: function(e) {
+        var id = this._getIdByButtonEvent(e);
+        var item = this._getItemById(id);
+        var itemPosition = null;
+        var previousItemPosition = null;
+        var previousItemId = null;
+        for(var i = 0; i < this.items.length; i++) {
+          if (item.id === this.items[i].id) {
+            itemPosition = i;
+            if (this.items[i - 1] != 'undefined') {
+              previousItemPosition = i - 1;
+              previousItemId = this.items[i - 1].id;
+            }
+          }
+        }
+        if (itemPosition !== null && previousItemPosition !== null) {
+          var itemOrder = item.order;
+          var previousOrder = this.items[previousItemPosition].order;
+          this.items[itemPosition].order = previousOrder;
+          this.items[previousItemPosition].order = itemOrder;
+          this._refreshUI();
+        }
+      },
+
+      /**
+       * Up one position (items must be preordered before changing position).
+       */
+      _onUpItem: function(e) {
+        var id = this._getIdByButtonEvent(e);
+        var item = this._getItemById(id);
+        var itemPosition = null;
+        var nextItemPosition = null;
+        var nextItemId = null;
+        for(var i = 0; i < this.items.length; i++) {
+          if (item.id === this.items[i].id) {
+            itemPosition = i;
+            if (this.items[i + 1] != 'undefined') {
+              nextItemPosition = i + 1;
+              nextItemId = this.items[i + 1].id;
+            }
+          }
+        }
+        if (itemPosition !== null && nextItemPosition !== null) {
+          var itemOrder = item.order;
+          var nextOrder = this.items[nextItemPosition].order;
+          this.items[itemPosition].order = nextOrder;
+          this.items[nextItemPosition].order = itemOrder;
+          this._refreshUI();
+        }
+      },
+
+      /**
+       * Trigger hidden input file click.
+       */
       _selectFiles: function() {
         this.$.browse.value = '';
         this.$.browse.click();
@@ -280,7 +425,18 @@
         this.qtdLimitReached = (this.qtdFiles >= this.maxFiles);
       },
 
+      /**
+       * Pending files in queue for processing.
+       */
+      _qtdPendingFilesChanged: function() {
+        this.isLoading = (this.qtdPendingFiles > 0);
+      },
+
+      /**
+       * Proccess files selected in input file.
+       */
       _readFiles: function(e) {
+        this.isLoading = true;
         var that = this;
         // Let's store the FileList Array into a variable:
         // https://developer.mozilla.org/en-US/docs/Web/API/FileList
@@ -293,8 +449,9 @@
         }
         // Check for `files` (FileList) support and if contains at least one file:
         if (files && files[0]) {
+          this.qtdPendingFiles = this.qtdPendingFiles + files.length;
           // Iterate over every File object in the FileList array
-          for(var i=0; i<files.length; i++) {
+          for(var i=0; i < files.length; i++) {
             // Let's refer to the current File as a `file` variable
             // https://developer.mozilla.org/en-US/docs/Web/API/File
             var file = files[i];
@@ -316,8 +473,10 @@
         }
       },
 
+      /**
+       * Generate image and add item from imput file queue.
+       */
       _readImage: function(file) {
-        console.log(this.qtdLimitReached);
         var that = this;
         // Create a new FileReader instance
         // https://developer.mozilla.org/en/docs/Web/API/FileReader
@@ -341,7 +500,7 @@
               type: file.type,
               size: file.size,
               src: image.src
-            }
+            };
             // Finally append our created image and the HTML info string to our `#preview`
             //that.$.preview.appendChild(this);
             //that.$.preview.insertAdjacentHTML("beforeend", imageInfo +'<br>');
@@ -355,6 +514,8 @@
               // Free some memory for optimal performance
               window.URL.revokeObjectURL(image.src);
             }
+            // decrease pending qtd
+            that.qtdPendingFiles--;
           });
           image.src = that.useBlob ? window.URL.createObjectURL(file) : reader.result;
           image.removeEventListener("load", function(){});
@@ -362,15 +523,56 @@
         // https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readAsDataURL
         reader.readAsDataURL(file);
         reader.removeEventListener("load", function(){});
+      },
 
+      /**
+       * Public function to fill existent items.
+       */
+      setItems: function(items) {
+        // TODO: validate param
+
+        // Order array of items by field 'order'.
+        items.sort(function(a, b) {
+          return parseFloat(a.order) - parseFloat(b.order);
+        });
+        // remove UI items
+        this.$$('#itens-container').innerHTML = '';
+        for(var i = 0; i < items.length; i++) {
+          var image  = new Image();
+          image.src = items[i].src;
+          this.addItem(image, items[i], items[i].id);
+        }
+      },
+
+      /**
+       * Refresh ui by this.items state.
+       */
+      _refreshUI: function() {
+        // clear variables
+        //this.isLoading = true;
+        this.hasImages = false;
+        this.qtdFiles = 0;
+        this.qtdPendingFiles = 0;
+        this.qtdLimitReached = false;
+        // render items
+        /*for (var i = 0; i < this.items.length; i++) {
+          var image  = new Image();
+          image.src = this.items[i].src;
+          this.addItem(image, this.items[i], this.items[i].id);
+        }*/
+        var clone = JSON.parse(JSON.stringify(this.items));
+        this.items = [];
+        this.setItems(clone);
       },
 
       /**
        * Add item to array and call render ui.
        */
-      addItem: function(img, imgInfo) {
+      addItem: function(img, imgInfo, id) {
         if (this.qtdLimitReached === false) {
-          imgInfo.id = this._generateObjectId();
+          imgInfo.id = id || this._generateObjectId();
+          imgInfo.order = imgInfo.order || this._generateOrder()
+          //imgInfo.order = this._generateObjectId();
           this.items.push(imgInfo);
           var divItem = this.renderItem(img, imgInfo);
           this.$$('#itens-container').appendChild(divItem);
@@ -407,16 +609,20 @@
         var spanWidth = document.createElement('span');
         spanWidth.setAttribute('class', 'width');
         spanWidth.innerText = imgInfo.width;
+        // span.vs
+        var spanVs = document.createElement('span');
+        spanVs.innerText = ' x '
         // span.height
         var spanHeight = document.createElement('span');
         spanHeight.setAttribute('class', 'height');
-        spanHeight.innerText = imgInfo.height;
+        spanHeight.innerText = imgInfo.height
         // span.size
         var spanSize = document.createElement('span');
         spanSize.setAttribute('class', 'size');
         spanSize.innerText = ' (' + Math.round(imgInfo.size/1024) + 'KB)'
 
         divDetails.appendChild(spanWidth);
+        divDetails.appendChild(spanVs);
         divDetails.appendChild(spanHeight);
         divDetails.appendChild(spanSize);
 
@@ -431,14 +637,27 @@
         // div.icons-container
         var divIcons = document.createElement('div');
         divIcons.setAttribute('class', 'icons-container');
+        // paper-icon-button (up)
+        var buttonUp = document.createElement('paper-icon-button');
+        buttonUp.setAttribute('icon', 'icons:arrow-upward');
+        buttonUp.setAttribute('title', 'Up');
+        buttonUp.setAttribute('class', 'btn-up');
+        this.listen(buttonUp, 'tap', '_onDownItem');
+        divIcons.appendChild(buttonUp);
+        // paper-icon-button (down)
+        var buttonDown = document.createElement('paper-icon-button');
+        buttonDown.setAttribute('icon', 'icons:arrow-downward');
+        buttonDown.setAttribute('title', 'Down');
+        buttonDown.setAttribute('class', 'btn-down');
+        this.listen(buttonDown, 'tap', '_onUpItem');
+        divIcons.appendChild(buttonDown);
         // paper-icon-button (edit)
         var buttonEdit = document.createElement('paper-icon-button');
         buttonEdit.setAttribute('icon', 'icons:create');
         buttonEdit.setAttribute('title', 'Edit image');
-        buttonEdit.setAttribute('class', 'teste');
         this.listen(buttonEdit, 'tap', '_editItem');
         divIcons.appendChild(buttonEdit);
-        // paper-icon-button (edit)
+        // paper-icon-button (remove)
         var buttonRemove = document.createElement('paper-icon-button');
         buttonRemove.setAttribute('icon', 'icons:clear');
         buttonRemove.setAttribute('title', 'Edit image');
@@ -514,10 +733,7 @@
        * Edit item (open dialog)
        */
       _editItem: function(e) {
-        var thisButton = e.currentTarget;
-        var parent = thisButton.closest(".upload-item");
-        var attrId = parent.getAttribute('id');
-        var id = attrId.replace('item-', '');
+        var id = this._getIdByButtonEvent(e);
         var item = this._getItemById(id);
         // open dialog
         this.$.dialog.open();
@@ -545,10 +761,7 @@
        * Remove item from array of itens and UI.
        */
       _removeItem: function(e) {
-        var thisButton = e.currentTarget;
-        var parent = thisButton.closest(".upload-item");
-        var attrId = parent.getAttribute('id');
-        var id = attrId.replace('item-', '');
+        var id = this._getIdByButtonEvent(e);
         // remove array index
         for(var i = 0; i < this.items.length; i++) {
           if (this.items[i].id == id) {
@@ -557,7 +770,7 @@
         }
         this.qtdFiles --;
         // remove ui
-        parent.remove();
+        this.$$('#item-' + id).remove();
         // revalidate
         this._validateAll();
       },
@@ -567,17 +780,6 @@
        */
       crop: function() {
         this.dscCropper.crop();
-      },
-
-      /**
-       * Return item object by ID
-       */
-      _getItemById: function(id) {
-        for(var i = 0; i < this.items.length; i++) {
-          if (this.items[i].id == id) {
-            return this.items[i];
-          }
-        }
       },
 
       /**

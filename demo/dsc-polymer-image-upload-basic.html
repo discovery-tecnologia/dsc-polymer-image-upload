@@ -1,4 +1,5 @@
 <link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-ajax/iron-ajax.html">
 <link rel="import" href="../dsc-polymer-image-upload.html">
 
 <dom-module id="dsc-polymer-image-upload-basic">
@@ -6,30 +7,28 @@
     <style>
       :host {
         display: block;
-        background-color: #eeeeee;
-        width: 600px;
+        background-color: #f5f5f5;
+        width: 700px;
         margin: 0 auto;
         padding: 30px;
       }
-
-      dsc-polymer-image-upload {
-
-        /*margin: 60px 0;
-        padding: 120px 0;
-        text-align: center;*/
-        /*display: block;
-        max-width: 600px;
-        margin: 0 auto;*/
-      }
     </style>
 
-    <dsc-polymer-image-upload></dsc-polymer-image-upload>
+    <iron-ajax auto url="api-example.json" handle-as="json" on-response="onResponse"></iron-ajax>
+
+    <dsc-polymer-image-upload id="teste"></dsc-polymer-image-upload>
 
   </template>
 
   <script>
     Polymer({
       is: 'dsc-polymer-image-upload-basic',
+
+      onResponse: function(response) {
+        var data = response.detail.response;
+        this.$$('#teste').setItems(data);
+      },
+
     });
   </script>
 </dom-module>
