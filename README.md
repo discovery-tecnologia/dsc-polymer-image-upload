@@ -87,3 +87,4 @@ $ npm test
 ## TODO
  * contrast and brightness
  * separate item in new internal polymer element
+ * Tests
