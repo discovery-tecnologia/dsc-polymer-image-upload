@@ -149,7 +149,9 @@
       .low-height .height,
       .high-size .size,
       .different-ratio .ratio,
-      .repeated-name .name {
+      .repeated-name .name,
+      .pattern-name .name,
+      .pattern-description .text-description {
         color: red;
       }
 
@@ -375,8 +377,10 @@
 
       /**
        * Generate new object ID.
+       *
+       * @return {string}
        */
-      _generateObjectId: function () {
+      _generateObjectId: function() {
         var timestamp = (new Date().getTime() / 1000 | 0).toString(16);
         return timestamp + 'xxxxxxxxxxxxxxxx'.replace(/[x]/g, function() {
             return (Math.random() * 16 | 0).toString(16);
@@ -385,21 +389,34 @@
 
       /**
        * Return next order to nex item (last + 1).
+       *
+       * @return {number}
        */
       _generateOrder: function() {
         var lastOrder = 0;
-        if (this.items.length > 0){
-          lastOrder = Math.max.apply(null, this.items.map(function(o) {return o.order;}));
+        if (this.items.length > 0) {
+          lastOrder = Math.max.apply(
+            null,
+            this.items.map(
+              function(o) {
+                return o.order;
+              }
+            )
+          );
         }
         return lastOrder + 1;
       },
 
       /**
        * Return item ID event of button click.
+       *
+       * @param {object} event Object of event.
+       *
+       * @return {string}
        */
       _getIdByButtonEvent: function(event) {
         var thisButton = event.currentTarget;
-        var parent = thisButton.closest(".upload-item");
+        var parent = thisButton.closest('.upload-item');
         var attrId = parent.getAttribute('id');
         var id = attrId.replace('item-', '');
         return id;
@@ -407,6 +424,10 @@
 
       /**
        * Return item object by ID
+       *
+       * @param {string} id Item ID.
+       *
+       * @return {object}
        */
       _getItemById: function(id) {
         for(var i = 0; i < this.items.length; i++) {
@@ -418,6 +439,8 @@
 
       /**
        * Show preview dialog.
+       *
+       * @param {object} e Object of event.
        */
       _onPreview: function(e) {
         this.isLoading = true;
@@ -439,6 +462,8 @@
 
       /**
        * Down one position (items must be preordered before changing position).
+       *
+       * @param {object} e Object of event.
        */
       _onDownItem: function(e) {
         this.isLoading = true;
@@ -446,13 +471,11 @@
         var item = this._getItemById(id);
         var itemPosition = null;
         var previousItemPosition = null;
-        var previousItemId = null;
         for(var i = 0; i < this.items.length; i++) {
           if (item.id === this.items[i].id) {
             itemPosition = i;
             if (this.items[i - 1] != 'undefined') {
               previousItemPosition = i - 1;
-              previousItemId = this.items[i - 1].id;
             }
           }
         }
@@ -468,6 +491,8 @@
 
       /**
        * Up one position (items must be preordered before changing position).
+       *
+       * @param {object} e Object of event.
        */
       _onUpItem: function(e) {
         this.isLoading = true;
@@ -475,13 +500,11 @@
         var item = this._getItemById(id);
         var itemPosition = null;
         var nextItemPosition = null;
-        var nextItemId = null;
         for(var i = 0; i < this.items.length; i++) {
           if (item.id === this.items[i].id) {
             itemPosition = i;
             if (this.items[i + 1] != 'undefined') {
               nextItemPosition = i + 1;
-              nextItemId = this.items[i + 1].id;
             }
           }
         }
@@ -526,18 +549,19 @@
 
       /**
        * Proccess files selected in input file.
+       *
+       * @param {object} e Object of event.
        */
       _readFiles: function(e) {
         this.isLoading = true;
         var that = this;
         // Let's store the FileList Array into a variable:
         // https://developer.mozilla.org/en-US/docs/Web/API/FileList
-        //var files  = this.files;
-        var files  = e.target.files;
+        var files = e.target.files;
         // Let's create an empty `errors` String to collect eventual errors into:
-        var errors = "";
+        var errors = '';
         if (! files) {
-          errors += "File upload not supported by your browser.";
+          errors += 'File upload not supported by your browser.';
         }
         // Check for `files` (FileList) support and if contains at least one file:
         if (files && files[0]) {
@@ -555,7 +579,7 @@
               // Send our image `file` to our `_readImage` function!
               that._readImage(file);
             } else {
-              errors += file.name +" Unsupported Image extension\n";
+              errors += file.name + ' Unsupported Image extension\n';
             }
           }
         }
@@ -567,6 +591,8 @@
 
       /**
        * Generate image and add item from imput file queue.
+       *
+       * @param {object} file Object of item.
        */
       _readImage: function(file) {
         var that = this;
@@ -574,8 +600,7 @@
         // https://developer.mozilla.org/en/docs/Web/API/FileReader
         var reader = new FileReader();
         // Once a file is successfully readed:
-        reader.addEventListener("load", function () {
-
+        reader.addEventListener('load', function() {
           // At this point `reader.result` contains already the Base64 Data-URL
           // and we've could immediately show an image using
           // `elPreview.insertAdjacentHTML("beforeend", "<img src='"+ reader.result +"'>");`
@@ -583,20 +608,18 @@
           // Since the File Object does not hold the size of an image
           // we need to create a new image and assign it's src, so when
           // the image is loaded we can calculate it's width and height:
-          var image  = new Image();
-          image.addEventListener("load", function () {
+          var image = new Image();
+          image.addEventListener('load', function() {
             var imgInfo = {
               name: file.name,
               width: image.width,
               height: image.height,
               type: file.type,
               size: file.size,
-              src: image.src
+              src: image.src,
             };
             // Finally append our created image and the HTML info string to our `#preview`
-            //that.$.preview.appendChild(this);
-            //that.$.preview.insertAdjacentHTML("beforeend", imageInfo +'<br>');
-            that.addItem(this, imgInfo);
+            that._addItem(this, imgInfo);
             // If we set the variable `useBlob` to true:
             // (Data-URLs can end up being really large
             // `src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAA...........etc`
@@ -610,30 +633,11 @@
             that.qtdPendingFiles--;
           });
           image.src = that.useBlob ? window.URL.createObjectURL(file) : reader.result;
-          image.removeEventListener("load", function(){});
+          image.removeEventListener('load', function() {});
         });
         // https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readAsDataURL
         reader.readAsDataURL(file);
-        reader.removeEventListener("load", function(){});
-      },
-
-      /**
-       * Public function to fill existent items.
-       */
-      setItems: function(items) {
-        // TODO: validate param
-
-        // Order array of items by field 'order'.
-        items.sort(function(a, b) {
-          return parseFloat(a.order) - parseFloat(b.order);
-        });
-        // remove UI items
-        this.$$('#itens-container').innerHTML = '';
-        for(var i = 0; i < items.length; i++) {
-          var image  = new Image();
-          image.src = items[i].src;
-          this.addItem(image, items[i], items[i].id);
-        }
+        reader.removeEventListener('load', function() {});
       },
 
       /**
@@ -648,20 +652,23 @@
         this.qtdLimitReached = false;
         var clone = JSON.parse(JSON.stringify(this.items));
         this.items = [];
-        this.setItems(clone);
+        this.setData(clone);
         this.isLoading = false;
       },
 
       /**
        * Add item to array and call render ui.
+       *
+       * @param {object} img Image dom object.
+       * @param {object} imgInfo Object of item info.
+       * @param {string} id ID of item.
        */
-      addItem: function(img, imgInfo, id) {
+      _addItem: function(img, imgInfo, id) {
         if (this.qtdLimitReached === false) {
           imgInfo.id = id || this._generateObjectId();
-          imgInfo.order = imgInfo.order || this._generateOrder()
-          //imgInfo.order = this._generateObjectId();
+          imgInfo.order = imgInfo.order || this._generateOrder();
           this.items.push(imgInfo);
-          var divItem = this.renderItem(img, imgInfo);
+          var divItem = this._renderItem(img, imgInfo);
           this.$$('#itens-container').appendChild(divItem);
           this.qtdFiles ++;
           // revalidate
@@ -671,8 +678,13 @@
 
       /**
        * Render visual control item.
+       *
+       * @param {object} img Image dom object.
+       * @param {object} imgInfo Object of item info.
+       *
+       * @return {object} Dom element.
        */
-      renderItem: function(img, imgInfo) {
+      _renderItem: function(img, imgInfo) {
         // div.upload-item
         var divItem = document.createElement('div');
         divItem.setAttribute('class', 'upload-item');
@@ -704,18 +716,18 @@
         spanWidth.innerText = imgInfo.width;
         // span.vs
         var spanVs = document.createElement('span');
-        spanVs.innerText = ' x '
+        spanVs.innerText = ' x ';
         // span.height
         var spanHeight = document.createElement('span');
         spanHeight.setAttribute('class', 'height');
-        spanHeight.innerText = imgInfo.height
+        spanHeight.innerText = imgInfo.height;
         // span.separator
         var spanSeparator = document.createElement('span');
         spanSeparator.innerText = '  -  ';
         // aspect ratio
         var spanRatio = document.createElement('span');
         spanRatio.setAttribute('class', 'ratio');
-        spanRatio.innerText = this._getLabelAspectRatioBySize(imgInfo.width, imgInfo.height)
+        spanRatio.innerText = this._getLabelAspectRatioBySize(imgInfo.width, imgInfo.height);
         // span.separator
         var spanSeparator2 = document.createElement('span');
         spanSeparator2.innerText = '  -  ';
@@ -735,7 +747,7 @@
         divText.appendChild(divDetails);
         // description
         if (typeof imgInfo.description != 'undefined') {
-          divDescription = document.createElement('div');
+          var divDescription = document.createElement('div');
           divDescription.setAttribute('class', 'text-description');
           divDescription.innerText = imgInfo.description;
           divText.appendChild(divDescription);
@@ -778,31 +790,40 @@
       },
 
       /**
-       * State to validade before submit.
-       */
-      isValid: function() {
-        // each all itens
-        for(var i = 0; i < this.items.length; i++) {
-          if (this.items[i].errors.length > 0) {
-            return false;
-          }
-        }
-        return true;
-      },
-
-      /**
        * Calculate greatest common divisor for purposes of presentation of
        * aspect ratio.
+       *
+       * @param {number} width Width size.
+       * @param {number} height Height size.
+       *
+       * @return {number} GCD of aspect ratio.
        */
       _gcdBySize: function(width, height) {
         return (height == 0) ? width : this._gcdBySize(height, width%height);
       },
 
+      /**
+       * Calculate greatest common divisor for purposes of presentation of
+       * aspect ratio.
+       *
+       * @param {number} width Width size.
+       * @param {number} height Height size.
+       *
+       * @return {number} Calculated aspect ratio.
+       */
       _getAspectRatioBySize: function(width, height) {
         var gcd = this._gcdBySize(width, height);
         return (width/gcd) / (height/gcd);
       },
 
+      /**
+       * Return aspectratio human redable. Ex: '4:3'.
+       *
+       * @param {number} width Width size.
+       * @param {number} height Height size.
+       *
+       * @return {string}
+       */
       _getLabelAspectRatioBySize: function(width, height) {
         var gcd = this._gcdBySize(width, height);
         return width/gcd + ':' + height/gcd;
@@ -810,6 +831,10 @@
 
       /**
        * Return human redable size lebal by bytes size.
+       *
+       * @param {number} bytes Size in bytes.
+       *
+       * @return {string}
        */
       _getLabelSize: function(bytes) {
         var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
@@ -826,22 +851,42 @@
         for(var i = 0; i < this.items.length; i++) {
           // create array of erros
           var arrStatus = [];
-          if (this.maxWidth > 0 && this.items[i].width > this.maxWidth) {arrStatus.push('high-width')}
-          if (this.minWidth > 0 && this.items[i].width < this.minWidth) {arrStatus.push('low-width')}
-          if (this.maxHeight > 0 && this.items[i].height > this.maxHeight) {arrStatus.push('high-height')}
-          if (this.minHeight > 0 && this.items[i].height < this.minHeight) {arrStatus.push('low-height')}
-          if (this.items[i].size > this.maxFileSize) {arrStatus.push('high-size')}
+          if (this.maxWidth > 0 && this.items[i].width > this.maxWidth) {
+            arrStatus.push('high-width');
+          }
+          if (this.minWidth > 0 && this.items[i].width < this.minWidth) {
+            arrStatus.push('low-width');
+          }
+          if (this.maxHeight > 0 && this.items[i].height > this.maxHeight) {
+            arrStatus.push('high-height');
+          }
+          if (this.minHeight > 0 && this.items[i].height < this.minHeight) {
+            arrStatus.push('low-height');
+          }
+          if (this.items[i].size > this.maxFileSize) {
+            arrStatus.push('high-size');
+          }
+          if (! /^[0-9a-zA-Z\_\-\.]+$/.test(this.items[i].name)) {
+            arrStatus.push('pattern-name');
+          }
+          if (! /^[a-zA-ZçÇãÃáÁàÀéÉêÊíÍõÕóÓôÔúÚ0-9 .,;!@%_-]+$/.test(this.items[i].description)) {
+            arrStatus.push('pattern-description');
+          }
           // aspect ratio
           var ratio = this._getAspectRatioBySize(this.items[i].width, this.items[i].height);
           var ratioDiff = Math.abs(ratio - this.computedAspectRatio);
-          if (ratioDiff > 0.02) {arrStatus.push('different-ratio')}
+          if (ratioDiff > 0.02) {
+            arrStatus.push('different-ratio');
+          }
           var count = 0;
           for (var j = 0; j < this.items.length; j++) {
             if (this.items[i].name == this.items[j].name) {
               count ++;
             }
           }
-          if (count > 1) {arrStatus.push('repeated-name')}
+          if (count > 1) {
+            arrStatus.push('repeated-name');
+          }
           // set errors on items objects
           this.items[i].errors = arrStatus;
           // set errors on UI
@@ -850,16 +895,9 @@
       },
 
       /**
-       * On component ready.
-       */
-      ready: function() {
-        window.URL = window.URL || window.webkitURL;
-        this.useBlob = false && window.URL; // Set to `true` to use Blob instead of Data-URL
-        this._aspectRatioChanged();
-      },
-
-      /**
        * Event caled after crop result ok.
+       *
+       * @param {object} e Object of event.
        */
       _onCropResult: function(e) {
         var item = e.detail;
@@ -870,14 +908,16 @@
 
       /**
        * Edit item (open dialog)
+       *
+       * @param {object} e Object of event.
        */
       _editItem: function(e) {
-        //this.isLoading = true;
+        this.isLoading = true;
         var id = this._getIdByButtonEvent(e);
         var item = this._getItemById(id);
         // open dialog
         this.$.dialogCrop.open();
-        this.dscCropper = document.createElement("dsc-cropper");
+        this.dscCropper = document.createElement('dsc-cropper');
         this.dscCropper.id = item.id;
         this.dscCropper.type = item.type;
         this.dscCropper.name = item.name;
@@ -894,12 +934,14 @@
         this.listen(this.$$('#dialog-crop-confirm'), 'tap', 'crop');
         this.$.container.innerHTML = '';
         this.$.container.appendChild(this.dscCropper);
-        //this.isLoading = false;
+        this.isLoading = false;
         Polymer.updateStyles();
       },
 
       /**
        * Remove item from array of itens and UI.
+       *
+       * @param {object} e Object of event.
        */
       _removeItem: function(e) {
         var id = this._getIdByButtonEvent(e);
@@ -925,6 +967,8 @@
 
       /**
        * Update items array and UI after edit result.
+       *
+       * @param {object} item Item object.
        */
       _updateItem: function(item) {
         // search item
@@ -939,14 +983,74 @@
             this.items[i].description = item.description;
             // update ui
             var currentUi = Polymer.dom(this.root).querySelector('#item-' + item.id);
-            var image  = new Image();
-            image.src = item.src
-            var divItem = this.renderItem(image, this.items[i]);
+            var image = new Image();
+            image.src = item.src;
+            var divItem = this._renderItem(image, this.items[i]);
             currentUi.replaceWith(divItem);
             // revalidate
             this._validateAll();
           }
         }
+      },
+
+      /**
+       * On component ready.
+       */
+      ready: function() {
+        window.URL = window.URL || window.webkitURL;
+        this.useBlob = false && window.URL; // Set to `true` to use Blob instead of Data-URL
+        this._aspectRatioChanged();
+      },
+
+      /**
+       * Public function to fill existent items into component.
+       *
+       * @param {array} items Array of intems objects.
+       */
+      setData: function(items) {
+        // TODO: validate param
+
+        // Order array of items by field 'order'.
+        items.sort(function(a, b) {
+          return parseFloat(a.order) - parseFloat(b.order);
+        });
+        // remove UI items
+        this.$$('#itens-container').innerHTML = '';
+        for(var i = 0; i < items.length; i++) {
+          var image = new Image();
+          image.src = items[i].src;
+          this._addItem(image, items[i], items[i].id);
+        }
+      },
+
+      /**
+       * Public function that returns JSON object of items.
+       * It is recommended to check the 'isValid' method before getting the items.
+       *
+       * @return {array} Array of intems objects.
+       */
+      getData: function() {
+        var clone = JSON.parse(JSON.stringify(this.items));
+        clone.forEach(function(v) {
+            delete v.errors;
+          }
+        );
+        return clone;
+      },
+
+      /**
+       * Public function to validade items.
+       *
+       * @return {boolean}
+       */
+      isValid: function() {
+        // each all itens
+        for(var i = 0; i < this.items.length; i++) {
+          if (this.items[i].errors.length > 0) {
+            return false;
+          }
+        }
+        return true;
       },
     });
   </script>

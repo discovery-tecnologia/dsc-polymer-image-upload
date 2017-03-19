@@ -6,7 +6,19 @@
 
 Images crop and upload.
 
-Custom content.
+![demo](https://raw.githubusercontent.com/discovery-tecnologia/dsc-polymer-image-upload/master/docs/img/01.jpg)
+![demo](https://raw.githubusercontent.com/discovery-tecnologia/dsc-polymer-image-upload/master/docs/img/02.jpg)
+
+Differential:
+
+ * Easy to use
+ * Fully compatible with restfull APIs (base64 encode)
+ * Resize and crop image
+ * JPG size optimization
+ * Validate file name, width, height, aspect ratio, size and quantity of files
+ * Order suport
+ * Custom file name and description
+ * Customizable style
 
 ## Demo
 
@@ -30,20 +42,39 @@ $ bower i dsc-polymer-image-upload --save
 Example usage:
 
 ```html
-<dsc-polymer-image-upload>
+<dsc-polymer-image-upload
+    max-files="10"
+    aspect-ratio="16:9"
+    max-width="1920"
+    max-height="1080">
 </dsc-polymer-image-upload>
 ```
 
-## API
+## API Reference
 
-| Property       | Description                    | Default       |
-|:---------------|--------------------------------|---------------|
+### Properties
 
-The content can be any HTML element or other polymer component.
+| Property       | Description                               | Default       |
+|:---------------|-------------------------------------------|---------------|
+| max-files      | Maximum number of files                   | 5             |
+| max-file-size  | Maximum size in bytes per file            | 1024000 (1MB) |
+| min-width      | Minimum image width in pixels             | 320           |
+| max-width      | Maximum image width in pixels             | 1920          |
+| min-height     | Minimum image height in pixels            | 240           |
+| max-height     | Maximum image height in pixels            | 1080          |
+| aspect-ratio   | Force aspect ratio of crop. Ex: 16:9, 4:3, 1:1, 2:3 or 0 for free | 1:1 |
 
-| Custom property |	Description                       | Default |
-|:----------------|-----------------------------------|---------|
+### Methods
 
+| Method           | Description                                      |
+|:-----------------|--------------------------------------------------|
+| **setData**()    | Set array of objects by exitent items. The format of the objects must be the same as that returned by the getData method |
+| **isValid**()    | Boolean state of validation                      |
+| **getData**()    | returns JSON array of object items. It is recommended to check the 'isValid' method before getting the items |
+
+### Events
+
+none
 
 ## Test
 

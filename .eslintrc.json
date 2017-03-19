@@ -9,7 +9,9 @@
   "rules": {
     "no-var": "off",
     "new-cap": ["error", { "capIsNewExceptions": ["Polymer"] }],
-    "max-len": ["error", 120]
+    "max-len": ["error", 120],
+    "no-console": "off",
+    "prefer-rest-params": "off"
   },
   "globals": {
     "Polymer": true

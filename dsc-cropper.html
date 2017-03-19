@@ -86,7 +86,7 @@
         value="{{description}}"
         maxlength="100"
         auto-validate
-        pattern="[a-zA-Z0-9 ]*"
+        pattern="[a-zA-ZçÇãÃáÁàÀéÉêÊíÍõÕóÓôÔúÚ0-9 .,;!@%_-]*"
         error-message="Invalid description">
       </paper-input>
 
@@ -179,9 +179,9 @@
         }
       },
 
-      _render: function () {
+      _render: function() {
         if (! window.Cropper) {
-          return console.error('Cropper has not been initialized');
+          return new Error('Cropper has not been initialized');
         }
 
         if (this._cropper) {
@@ -191,13 +191,14 @@
         // The options object as specified in https://github.com/fengyuanchen/cropperjs#options
         var cropjsOptions = {
           aspectRatio: this.aspectRatio,
+          autoCropArea: 1, // initial selection, cropperjs default is 0.8
         };
 
         var options = Object.assign({}, cropjsOptions);
         var wrapper = this.$.wrapper;
 
         options._ready = options.ready;
-        options.ready = function (e) {
+        options.ready = function(e) {
           wrapper.removeAttribute('style');
           if (options._ready) {
             return options._ready(e);
@@ -214,24 +215,23 @@
         var that = this;
 
         options.crop = function(e) {
-          //that.$.width.textContent = parseInt(e.detail.width);
-          //that.$.height.textContent = parseInt(e.detail.height);
           that.width = parseInt(e.detail.width);
           that.height = parseInt(e.detail.height);
-        }
+        };
 
         this._cropper = new window.Cropper(this.$.image, options);
-        //this.listen(this, 'crop', 'crop');
         // parse file name
         var dotPos = this.name.lastIndexOf('.');
         var name = this.name.substr(0, dotPos);
         var ext = this.name.substr(dotPos, this.name.legth);
         this.name = name;
-        this.ext = ext
+        this.ext = ext;
       },
 
       /**
        * Validate all.
+       *
+       * @return {boolean}
        */
       _validate: function() {
         var messages = [];
@@ -276,10 +276,10 @@
        */
       _showToast: function(message, color) {
         var toast = this.$.toast;
-        /*if(message == null) {
+        /* if(message == null) {
             message = this.localize('success_message');
-        }*/
-        //toast.text = message;
+        } */
+        // toast.text = message;
         toast.innerHTML = message;
 
         this.customStyle['--paper-toast-background-color'] = color == null
@@ -293,6 +293,10 @@
       /**
        * Returns object crop data. Ex
        * {height:384, rotate:0,scaleX:1, scaleY:1, width:384, x:128, y:48}
+       *
+       * @param {String} key Name of the searched property. Null for all.
+       *
+       * @return {object}
        */
       _getCropData: function(key) {
         var data = this._cropper.getData();
@@ -303,11 +307,11 @@
       },
 
       setDragModeMove: function() {
-        this._cropper.setDragMode('move')
+        this._cropper.setDragMode('move');
       },
 
       setDragModeCrop: function() {
-        this._cropper.setDragMode('crop')
+        this._cropper.setDragMode('crop');
       },
 
       zoomIn: function() {
@@ -340,10 +344,9 @@
         this._cropper.scaleY(y * -1);
       },
 
-      crop: function () {
-        var data = this._cropper.getCroppedCanvas().toDataURL(this.type);
+      crop: function() {
+        var data = this._cropper.getCroppedCanvas().toDataURL(this.type, 0.8);
         var bytes = Math.round(data.length * 3 / 4);
-        // var kbytes =  Math.round(bytes/1024) + 'KB';
         var result = {
           id: this.id,
           src: data,
@@ -351,7 +354,7 @@
           height: parseInt(this._getCropData('height')),
           size: bytes,
           name: this.name + this.ext,
-          description: this.description
+          description: this.description,
         };
 
         if (this._validate() == true) {

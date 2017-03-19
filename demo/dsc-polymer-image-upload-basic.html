@@ -7,19 +7,36 @@
     <style>
       :host {
         display: block;
-        background-color: #f5f5f5;
         width: 700px;
         margin: 0 auto;
+      }
+
+      #container {
+        display: block;
+        background-color: #f5f5f5;
         padding: 30px;
       }
     </style>
 
     <iron-ajax auto url="api-example.json" handle-as="json" on-response="onResponse"></iron-ajax>
 
-    <dsc-polymer-image-upload
-    id="teste"
-    aspect-ratio="4:3">
-    </dsc-polymer-image-upload>
+    <div id="container">
+
+      <dsc-polymer-image-upload
+        id="my-component"
+        max-files="10"
+        aspect-ratio="4:3"
+        max-width="3840"
+        max-height="2160">
+      </dsc-polymer-image-upload>
+
+    </div>
+
+    <br>
+    <input type="button" value="isValid()" on-tap="_isValid" />
+    <input type="button" value="getData()" on-tap="_getData"/>
+    <p><small>Result displayed on the console...</small></p>
+
 
   </template>
 
@@ -27,11 +44,21 @@
     Polymer({
       is: 'dsc-polymer-image-upload-basic',
 
+      // set exitent data
       onResponse: function(response) {
         var data = response.detail.response;
-        this.$$('#teste').setItems(data);
+        this.$$('#my-component').setData(data);
       },
 
+      // verify if is valid
+      _isValid: function() {
+        console.log(this.$$('#my-component').isValid());
+      },
+
+      // get data of component
+      _getData: function() {
+        console.log(this.$$('#my-component').getData());
+      },
     });
   </script>
 </dom-module>
