@@ -20,6 +20,38 @@
         @apply(--paper-font-common-base);
       }
 
+      #dsc-image-upoload {
+        position: relative;
+      }
+
+      #spinnerOverlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #eeeeee;
+        z-index: 10;
+        opacity: 0.4;
+      }
+
+      #spinnerContainer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 20;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #spinnerOverlay[hidden],
+      #spinnerContainer[hidden] {
+        display: none;
+      }
+
       #container {
         width: 500px;
       }
@@ -89,9 +121,14 @@
         @apply(--shadow-elevation-2dp);
       }
 
-      .upload-item img {
-        width: 60px;
-        height: 60px;
+      .upload-item .img-container {
+        transition: opacity 0.3s;
+        -webkit-transition: opacity 0.3s;
+        cursor: zoom-in;
+      }
+
+      .upload-item .img-container:hover {
+        opacity: 0.5;
       }
 
       .upload-item:first-of-type .btn-up {
@@ -111,6 +148,7 @@
       .high-height .height,
       .low-height .height,
       .high-size .size,
+      .different-ratio .ratio,
       .repeated-name .name {
         color: red;
       }
@@ -136,6 +174,11 @@
 
     <div id="dsc-image-upoload">
 
+      <div id="spinnerOverlay" hidden$="[[!isLoading]]"></div>
+      <div id="spinnerContainer" hidden$="[[!isLoading]]">
+        <paper-spinner active$="[[isLoading]]"></paper-spinner>
+      </div>
+
       <input type="file" id="browse" hidden multiple on-change="_readFiles" accept="image/*">
 
       <div id="preview"></div>
@@ -145,7 +188,6 @@
           <iron-icon icon="icons:file-upload"></iron-icon>
           SELECT FILES
         </paper-button>
-        <paper-spinner active$="[[isLoading]]"></paper-spinner>
         <div id="label-qtd">
           <iron-icon id="help" icon="icons:help-outline"></iron-icon>
           <paper-tooltip for="help" position="bottom" animation-delay="0">
@@ -160,11 +202,18 @@
 
       <div id="itens-container"></div>
 
-      <paper-dialog id="dialog" modal>
+      <paper-dialog id="dialogCrop" modal>
         <div id="container"></div>
         <div class="buttons">
           <paper-button dialog-confirm autofocus>Cancel</paper-button>
           <paper-button id="dialog-crop-confirm">Apply</paper-button>
+        </div>
+      </paper-dialog>
+
+      <paper-dialog id="dialogPreview" modal>
+        <div id="previewContainer"></div>
+        <div class="buttons">
+          <paper-button dialog-confirm autofocus>Close</paper-button>
         </div>
       </paper-dialog>
 
@@ -232,7 +281,7 @@
          */
         maxFileSize: {
           type: Number,
-          value: 5 * 1024, // 5MB
+          value: 1000 * 1024, // 1MB
         },
 
         /**
@@ -268,11 +317,20 @@
         },
 
         /**
-         * Force aspect ratio. Ex: 16/9, 4/3, 1, 2/3 or 'Nan' for free.
+         * Force aspect ratio. Ex: 16:9, 4:3, 1:1, 2:3 or 0 for free.
          */
         aspectRatio: {
+          type: String,
+          value: '1:1',
+          observer: '_aspectRatioChanged',
+        },
+
+        /**
+         * Numeric calculate aspect ratio by aspectRatio propertie. Ex: 4:3 equal 0.666666667.
+         * Nan for free.
+         */
+        computedAspectRatio: {
           type: Number,
-          value: 16/9,
         },
 
         /**
@@ -359,9 +417,31 @@
       },
 
       /**
+       * Show preview dialog.
+       */
+      _onPreview: function(e) {
+        this.isLoading = true;
+        var id = this._getIdByButtonEvent(e);
+        var item = this._getItemById(id);
+        var windowHeight = window.innerHeight - 200;
+        var that = this;
+        // iron image
+        var image = new Image();
+        image.setAttribute('style', 'display:block;max-width:100%;max-height:' + windowHeight + 'px;');
+        image.onload = function() {
+          that.$.previewContainer.innerHTML = '';
+          that.$.previewContainer.appendChild(this);
+          that.$.dialogPreview.open();
+          that.isLoading = false;
+        };
+        image.setAttribute('src', item.src);
+      },
+
+      /**
        * Down one position (items must be preordered before changing position).
        */
       _onDownItem: function(e) {
+        this.isLoading = true;
         var id = this._getIdByButtonEvent(e);
         var item = this._getItemById(id);
         var itemPosition = null;
@@ -383,12 +463,14 @@
           this.items[previousItemPosition].order = itemOrder;
           this._refreshUI();
         }
+        this.isLoading = false;
       },
 
       /**
        * Up one position (items must be preordered before changing position).
        */
       _onUpItem: function(e) {
+        this.isLoading = true;
         var id = this._getIdByButtonEvent(e);
         var item = this._getItemById(id);
         var itemPosition = null;
@@ -410,6 +492,7 @@
           this.items[nextItemPosition].order = itemOrder;
           this._refreshUI();
         }
+        this.isLoading = false;
       },
 
       /**
@@ -430,6 +513,15 @@
        */
       _qtdPendingFilesChanged: function() {
         this.isLoading = (this.qtdPendingFiles > 0);
+      },
+
+      /**
+       * Observer aspectRatio to update calculatedAspectRatio.
+       */
+      _aspectRatioChanged: function() {
+        // TODO: validate format
+        var arr = this.aspectRatio.split(':');
+        this.computedAspectRatio = parseInt(arr[0]) / parseInt(arr[1]);
       },
 
       /**
@@ -549,20 +641,15 @@
        */
       _refreshUI: function() {
         // clear variables
-        //this.isLoading = true;
+        this.isLoading = true;
         this.hasImages = false;
         this.qtdFiles = 0;
         this.qtdPendingFiles = 0;
         this.qtdLimitReached = false;
-        // render items
-        /*for (var i = 0; i < this.items.length; i++) {
-          var image  = new Image();
-          image.src = this.items[i].src;
-          this.addItem(image, this.items[i], this.items[i].id);
-        }*/
         var clone = JSON.parse(JSON.stringify(this.items));
         this.items = [];
         this.setItems(clone);
+        this.isLoading = false;
       },
 
       /**
@@ -590,10 +677,16 @@
         var divItem = document.createElement('div');
         divItem.setAttribute('class', 'upload-item');
         divItem.setAttribute('id', 'item-' + imgInfo.id);
+        // iron image
+        var ironImage = document.createElement('iron-image');
+        ironImage.setAttribute('style', 'width:55px; height:55px;');
+        ironImage.setAttribute('sizing', 'cover'); // contain
+        ironImage.setAttribute('src', img.src);
+        this.listen(ironImage, 'tap', '_onPreview');
         // div.img-container
         var divImg = document.createElement('div');
         divImg.setAttribute('class', 'img-container');
-        divImg.appendChild(img);
+        divImg.appendChild(ironImage);
         // div.text-container
         var divText = document.createElement('div');
         divText.setAttribute('class', 'text-container');
@@ -616,14 +709,27 @@
         var spanHeight = document.createElement('span');
         spanHeight.setAttribute('class', 'height');
         spanHeight.innerText = imgInfo.height
+        // span.separator
+        var spanSeparator = document.createElement('span');
+        spanSeparator.innerText = '  -  ';
+        // aspect ratio
+        var spanRatio = document.createElement('span');
+        spanRatio.setAttribute('class', 'ratio');
+        spanRatio.innerText = this._getLabelAspectRatioBySize(imgInfo.width, imgInfo.height)
+        // span.separator
+        var spanSeparator2 = document.createElement('span');
+        spanSeparator2.innerText = '  -  ';
         // span.size
         var spanSize = document.createElement('span');
         spanSize.setAttribute('class', 'size');
-        spanSize.innerText = ' (' + Math.round(imgInfo.size/1024) + 'KB)'
+        spanSize.innerText = this._getLabelSize(imgInfo.size);
 
         divDetails.appendChild(spanWidth);
         divDetails.appendChild(spanVs);
         divDetails.appendChild(spanHeight);
+        divDetails.appendChild(spanSeparator);
+        divDetails.appendChild(spanRatio);
+        divDetails.appendChild(spanSeparator2);
         divDetails.appendChild(spanSize);
 
         divText.appendChild(divDetails);
@@ -685,6 +791,34 @@
       },
 
       /**
+       * Calculate greatest common divisor for purposes of presentation of
+       * aspect ratio.
+       */
+      _gcdBySize: function(width, height) {
+        return (height == 0) ? width : this._gcdBySize(height, width%height);
+      },
+
+      _getAspectRatioBySize: function(width, height) {
+        var gcd = this._gcdBySize(width, height);
+        return (width/gcd) / (height/gcd);
+      },
+
+      _getLabelAspectRatioBySize: function(width, height) {
+        var gcd = this._gcdBySize(width, height);
+        return width/gcd + ':' + height/gcd;
+      },
+
+      /**
+       * Return human redable size lebal by bytes size.
+       */
+      _getLabelSize: function(bytes) {
+        var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        if (bytes == 0) return '0 Byte';
+        var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+        return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+      },
+
+      /**
        * Set errors on items array and UI.
        */
       _validateAll: function() {
@@ -692,11 +826,15 @@
         for(var i = 0; i < this.items.length; i++) {
           // create array of erros
           var arrStatus = [];
-          if (this.items[i].width > this.maxWidth) {arrStatus.push('high-width')}
-          if (this.items[i].width < this.minWidth) {arrStatus.push('low-width')}
-          if (this.items[i].height > this.maxHeight) {arrStatus.push('high-height')}
-          if (this.items[i].height < this.minHeight) {arrStatus.push('low-height')}
+          if (this.maxWidth > 0 && this.items[i].width > this.maxWidth) {arrStatus.push('high-width')}
+          if (this.minWidth > 0 && this.items[i].width < this.minWidth) {arrStatus.push('low-width')}
+          if (this.maxHeight > 0 && this.items[i].height > this.maxHeight) {arrStatus.push('high-height')}
+          if (this.minHeight > 0 && this.items[i].height < this.minHeight) {arrStatus.push('low-height')}
           if (this.items[i].size > this.maxFileSize) {arrStatus.push('high-size')}
+          // aspect ratio
+          var ratio = this._getAspectRatioBySize(this.items[i].width, this.items[i].height);
+          var ratioDiff = Math.abs(ratio - this.computedAspectRatio);
+          if (ratioDiff > 0.02) {arrStatus.push('different-ratio')}
           var count = 0;
           for (var j = 0; j < this.items.length; j++) {
             if (this.items[i].name == this.items[j].name) {
@@ -717,6 +855,7 @@
       ready: function() {
         window.URL = window.URL || window.webkitURL;
         this.useBlob = false && window.URL; // Set to `true` to use Blob instead of Data-URL
+        this._aspectRatioChanged();
       },
 
       /**
@@ -725,7 +864,7 @@
       _onCropResult: function(e) {
         var item = e.detail;
         this._updateItem(item);
-        this.$.dialog.close();
+        this.$.dialogCrop.close();
         // TODO: remove listeners
       },
 
@@ -733,17 +872,18 @@
        * Edit item (open dialog)
        */
       _editItem: function(e) {
+        //this.isLoading = true;
         var id = this._getIdByButtonEvent(e);
         var item = this._getItemById(id);
         // open dialog
-        this.$.dialog.open();
+        this.$.dialogCrop.open();
         this.dscCropper = document.createElement("dsc-cropper");
         this.dscCropper.id = item.id;
         this.dscCropper.type = item.type;
         this.dscCropper.name = item.name;
         this.dscCropper.description = item.description;
         this.dscCropper.src = item.src;
-        this.dscCropper.aspectRatio = this.aspectRatio;
+        this.dscCropper.aspectRatio = this.computedAspectRatio;
         this.dscCropper.minWidth = this.minWidth;
         this.dscCropper.maxWidth = this.aspectRamaxWidthtio;
         this.dscCropper.minHeight = this.minHeight;
@@ -754,6 +894,7 @@
         this.listen(this.$$('#dialog-crop-confirm'), 'tap', 'crop');
         this.$.container.innerHTML = '';
         this.$.container.appendChild(this.dscCropper);
+        //this.isLoading = false;
         Polymer.updateStyles();
       },
 
