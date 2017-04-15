@@ -202,7 +202,7 @@
         </div>
       </div>
 
-      <div id="itens-container"></div>
+      <div id="itensContainer"></div>
 
       <paper-dialog id="dialogCrop" modal>
         <div id="container"></div>
@@ -452,8 +452,10 @@
         var image = new Image();
         image.setAttribute('style', 'display:block;max-width:100%;max-height:' + windowHeight + 'px;');
         image.onload = function() {
-          that.$.previewContainer.innerHTML = '';
-          that.$.previewContainer.appendChild(this);
+          // that.$.previewContainer.innerHTML = '';
+          Polymer.dom(that.$.previewContainer).innerHTML = '';
+          // that.$.previewContainer.appendChild(this);
+          Polymer.dom(that.$.previewContainer).appendChild(this);
           that.$.dialogPreview.open();
           that.isLoading = false;
         };
@@ -669,10 +671,13 @@
           imgInfo.order = imgInfo.order || this._generateOrder();
           this.items.push(imgInfo);
           var divItem = this._renderItem(img, imgInfo);
-          this.$$('#itens-container').appendChild(divItem);
+          // this.$.itensContainer.appendChild(divItem);
+          Polymer.dom(this.$.itensContainer).appendChild(divItem);
           this.qtdFiles ++;
           // revalidate
           this._validateAll();
+          //Polymer.dom.flush();
+          //Polymer.updateStyles();
         }
       },
 
@@ -778,7 +783,7 @@
         // paper-icon-button (remove)
         var buttonRemove = document.createElement('paper-icon-button');
         buttonRemove.setAttribute('icon', 'icons:clear');
-        buttonRemove.setAttribute('title', 'Edit image');
+        buttonRemove.setAttribute('title', 'Remove image');
         this.listen(buttonRemove, 'tap', '_removeItem');
         divIcons.appendChild(buttonRemove);
 
@@ -890,7 +895,8 @@
           // set errors on items objects
           this.items[i].errors = arrStatus;
           // set errors on UI
-          this.$$('#item-' + this.items[i].id).setAttribute('class', 'upload-item ' + arrStatus.join(' '));
+          // this.$$('#item-' + this.items[i].id).setAttribute('class', 'upload-item ' + arrStatus.join(' '));
+          Polymer.dom(this.$$('#item-' + this.items[i].id)).setAttribute('class', 'upload-item ' + arrStatus.join(' '));
         }
       },
 
@@ -932,8 +938,10 @@
         this.dscCropper.cities = this.officesCities;
         this.listen(this.dscCropper, 'crop-result', '_onCropResult');
         this.listen(this.$$('#dialog-crop-confirm'), 'tap', 'crop');
-        this.$.container.innerHTML = '';
-        this.$.container.appendChild(this.dscCropper);
+        // this.$.container.innerHTML = '';
+        Polymer.dom(this.$.container).innerHTML = '';
+        // this.$.container.appendChild(this.dscCropper);
+        Polymer.dom(this.$.container).appendChild(this.dscCropper);
         this.isLoading = false;
         Polymer.updateStyles();
       },
@@ -1015,7 +1023,8 @@
           return parseFloat(a.order) - parseFloat(b.order);
         });
         // remove UI items
-        this.$$('#itens-container').innerHTML = '';
+        // this.$.itensContainer.innerHTML = '';
+        Polymer.dom(this.$.itensContainer).innerHTML = '';
         for(var i = 0; i < items.length; i++) {
           var image = new Image();
           image.src = items[i].src;
