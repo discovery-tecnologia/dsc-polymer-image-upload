@@ -1,5 +1,4 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../iron-icon/iron-icon.html">
 <link rel="import" href="../paper-button/paper-button.html">
@@ -9,6 +8,7 @@
 <link rel="import" href="../paper-spinner/paper-spinner.html">
 
 <link rel="import" href="dsc-image-upload-icons.html">
+<link rel="import" href="dsc-upload-item.html">
 <link rel="import" href="dsc-cropper.html">
 
 <dom-module id="dsc-polymer-image-upload">
@@ -75,78 +75,6 @@
         padding-right: 7px;
         font-size: 12px;
       }
-
-      .upload-item {
-        display: flex;
-        align-items: center;
-        box-sizing: border-box;
-        font: inherit;
-        outline-width: 0;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        -webkit-user-select: none;
-        user-select: none;
-        z-index: 0;
-        padding: 0.7em 0.57em;
-        border-top: 1px solid #e0e0e0;
-      }
-
-      .upload-item:first-of-type {
-        margin-top: 15px;
-      }
-
-      .upload-item .img-container {
-        transition: opacity 0.3s;
-        -webkit-transition: opacity 0.3s;
-        cursor: zoom-in;
-      }
-
-      .upload-item .img-container:hover {
-        opacity: 0.5;
-      }
-
-      .upload-item:first-of-type .btn-up {
-        display: none;
-      }
-
-      .upload-item:last-of-type .btn-down {
-        display: none;
-      }
-
-      .upload-item:last-of-type .btn-up {
-        margin-right: 40px;
-      }
-
-      .high-width .width,
-      .low-width .width,
-      .high-height .height,
-      .low-height .height,
-      .high-size .size,
-      .different-ratio .ratio,
-      .repeated-name .name,
-      .pattern-name .name,
-      .pattern-description .text-description {
-        color: red;
-      }
-
-      .text-container {
-        padding-left: 10px;
-        text-align: left;
-      }
-
-      .text-details {
-        font-size: 10px;
-        color: #666;
-      }
-
-      .text-description {
-        font-size: 10px;
-      }
-
-      .icons-container {
-        margin-left: auto;
-      }
-
     </style>
 
     <div id="dsc-image-upoload">
@@ -177,7 +105,23 @@
         </div>
       </div>
 
-      <div id="itensContainer"></div>
+      <div id="itensContainer">
+        <template id="itemsRepeat" is="dom-repeat" items="[[items]]">
+          <dsc-upload-item
+              index=[[index]]
+              src="[[item.src]]"
+              name="[[item.name]]"
+              width="[[item.width]]"
+              height="[[item.height]]"
+              aspect-ratio="[[item.aspectRatio]]"
+              size="[[item.size]]"
+              on-item-preview="_previewHandler"
+              on-item-up="_moveUpHandler"
+              on-item-down="_moveDownHandler"
+              on-item-edit="_editHandler"
+              on-item-remove="_removeHandler"></dsc-upload-item>
+        </template>
+      </div>
 
       <paper-dialog id="dialogCrop" modal>
         <div id="container"></div>
@@ -329,7 +273,6 @@
          * Array of images object data and info. Ex:
          *  [
          *    {
-         *      order: 1,
          *      src: "data:image/jpeg;base64,/9j/4AAQSkZJRgtgsrtgserfdhdfh...",
          *      width: 640,
          *      height: 480,
@@ -346,81 +289,33 @@
           type: Array,
           value: [],
           notify: true,
+          reflectToAttribute: true,
         },
-
       },
 
-      /**
-       * Generate new object ID.
-       *
-       * @return {string}
-       */
-      _generateObjectId: function() {
-        var timestamp = (new Date().getTime() / 1000 | 0).toString(16);
-        return timestamp + 'xxxxxxxxxxxxxxxx'.replace(/[x]/g, function() {
-            return (Math.random() * 16 | 0).toString(16);
-        }).toLowerCase();
-      },
-
-      /**
-       * Return next order to nex item (last + 1).
-       *
-       * @return {number}
-       */
-      _generateOrder: function() {
-        var lastOrder = 0;
-        if (this.items.length > 0) {
-          lastOrder = Math.max.apply(
-            null,
-            this.items.map(
-              function(o) {
-                return o.order;
-              }
-            )
-          );
+      arrayMove: function(array, oldIndex, newIndex) {
+        var arrLength = array.length;
+        if (newIndex >= arrLength || newIndex < 0) {
+          return array;
         }
-        return lastOrder + 1;
-      },
-
-      /**
-       * Return item ID event of button click.
-       *
-       * @param {object} event Object of event.
-       *
-       * @return {string}
-       */
-      _getIdByButtonEvent: function(event) {
-        var thisButton = event.currentTarget;
-        var parent = thisButton.closest('.upload-item');
-        var attrId = parent.getAttribute('id');
-        var id = attrId.replace('item-', '');
-        return id;
-      },
-
-      /**
-       * Return item object by ID
-       *
-       * @param {string} id Item ID.
-       *
-       * @return {object}
-       */
-      _getItemById: function(id) {
-        for(var i = 0; i < this.items.length; i++) {
-          if (this.items[i].id == id) {
-            return this.items[i];
+        while (oldIndex < 0) {
+          oldIndex += arrLength;
+        }
+        while (newIndex < 0) {
+          newIndex += arrLength;
+        }
+        if (newIndex >= arrLength) {
+          var k = newIndex - arrLength;
+          while ((k--) + 1) {
+            array.push(undefined);
           }
         }
+        array.splice(newIndex, 0, array.splice(oldIndex, 1)[0]);
+        return array;
       },
 
-      /**
-       * Show preview dialog.
-       *
-       * @param {object} e Object of event.
-       */
-      _onPreview: function(e) {
-        this.isLoading = true;
-        var id = this._getIdByButtonEvent(e);
-        var item = this._getItemById(id);
+      _previewHandler: function(event) {
+        var index = parseInt(event.detail);
         var windowHeight = window.innerHeight - 200;
         var that = this;
         // iron image
@@ -434,65 +329,60 @@
           that.$.dialogPreview.open();
           that.isLoading = false;
         };
-        image.setAttribute('src', item.src);
+        image.setAttribute('src', this.items[index].src);
+      },
+
+      _moveUpHandler: function(event) {
+        var index = parseInt(event.detail);
+        this.set('items', this.arrayMove(this.items, index, index - 1));
+        this.$.itemsRepeat.render(); // force refresh
+      },
+
+      _moveDownHandler: function(event) {
+        var index = parseInt(event.detail);
+        this.set('items', this.arrayMove(this.items, index, index + 1));
+        this.$.itemsRepeat.render(); // force refresh
       },
 
       /**
-       * Down one position (items must be preordered before changing position).
+       * Edit item (open dialog)
        *
-       * @param {object} e Object of event.
+       * @param {object} event Object of event.
        */
-      _onDownItem: function(e) {
+      _editHandler: function(event) {
+        var index = parseInt(event.detail);
         this.isLoading = true;
-        var id = this._getIdByButtonEvent(e);
-        var item = this._getItemById(id);
-        var itemPosition = null;
-        var previousItemPosition = null;
-        for(var i = 0; i < this.items.length; i++) {
-          if (item.id === this.items[i].id) {
-            itemPosition = i;
-            if (this.items[i - 1] != 'undefined') {
-              previousItemPosition = i - 1;
-            }
-          }
-        }
-        if (itemPosition !== null && previousItemPosition !== null) {
-          var itemOrder = item.order;
-          var previousOrder = this.items[previousItemPosition].order;
-          this.items[itemPosition].order = previousOrder;
-          this.items[previousItemPosition].order = itemOrder;
-          this._refreshUI();
-        }
+        var item = this.items[index];
+        // open dialog
+        // TODO: implements dom bind.
+        this.$.dialogCrop.open();
+        this.dscCropper = document.createElement('dsc-cropper');
+        this.dscCropper.id = item.id;
+        this.dscCropper.type = item.type;
+        this.dscCropper.name = item.name;
+        this.dscCropper.description = item.description;
+        this.dscCropper.src = item.src;
+        this.dscCropper.aspectRatio = this.computedAspectRatio;
+        this.dscCropper.minWidth = this.minWidth;
+        this.dscCropper.maxWidth = this.aspectRamaxWidthtio;
+        this.dscCropper.minHeight = this.minHeight;
+        this.dscCropper.maxHeight = this.maxHeight;
+        this.dscCropper.regions = this.officesRegions;
+        this.dscCropper.cities = this.officesCities;
+        this.listen(this.dscCropper, 'crop-result', '_onCropResult');
+        this.listen(this.$$('#dialog-crop-confirm'), 'tap', 'crop');
+        // this.$.container.innerHTML = '';
+        Polymer.dom(this.$.container).innerHTML = '';
+        // this.$.container.appendChild(this.dscCropper);
+        Polymer.dom(this.$.container).appendChild(this.dscCropper);
         this.isLoading = false;
+        Polymer.updateStyles();
       },
 
-      /**
-       * Up one position (items must be preordered before changing position).
-       *
-       * @param {object} e Object of event.
-       */
-      _onUpItem: function(e) {
-        this.isLoading = true;
-        var id = this._getIdByButtonEvent(e);
-        var item = this._getItemById(id);
-        var itemPosition = null;
-        var nextItemPosition = null;
-        for(var i = 0; i < this.items.length; i++) {
-          if (item.id === this.items[i].id) {
-            itemPosition = i;
-            if (this.items[i + 1] != 'undefined') {
-              nextItemPosition = i + 1;
-            }
-          }
-        }
-        if (itemPosition !== null && nextItemPosition !== null) {
-          var itemOrder = item.order;
-          var nextOrder = this.items[nextItemPosition].order;
-          this.items[itemPosition].order = nextOrder;
-          this.items[nextItemPosition].order = itemOrder;
-          this._refreshUI();
-        }
-        this.isLoading = false;
+      _removeHandler: function(event) {
+        var index = event.detail;
+        this.splice('items', index, 1);
+        this.notifyPath('items',this.items);
       },
 
       /**
@@ -596,7 +486,8 @@
               src: image.src,
             };
             // Finally append our created image and the HTML info string to our `#preview`
-            that._addItem(this, imgInfo);
+            //that._addItem(this, imgInfo);
+            that._addItem(imgInfo);
             // If we set the variable `useBlob` to true:
             // (Data-URLs can end up being really large
             // `src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAA...........etc`
@@ -618,153 +509,16 @@
       },
 
       /**
-       * Refresh ui by this.items state.
-       */
-      _refreshUI: function() {
-        // clear variables
-        this.isLoading = true;
-        this.hasImages = false;
-        this.qtdFiles = 0;
-        this.qtdPendingFiles = 0;
-        this.qtdLimitReached = false;
-        var clone = JSON.parse(JSON.stringify(this.items));
-        this.items = [];
-        this.setData(clone);
-        this.isLoading = false;
-      },
-
-      /**
        * Add item to array and call render ui.
        *
        * @param {object} img Image dom object.
        * @param {object} imgInfo Object of item info.
        * @param {string} id ID of item.
        */
-      _addItem: function(img, imgInfo, id) {
+      _addItem: function(data) {
         if (this.qtdLimitReached === false) {
-          imgInfo.id = id || this._generateObjectId();
-          imgInfo.order = imgInfo.order || this._generateOrder();
-          this.items.push(imgInfo);
-          var divItem = this._renderItem(img, imgInfo);
-          // this.$.itensContainer.appendChild(divItem);
-          Polymer.dom(this.$.itensContainer).appendChild(divItem);
-          this.qtdFiles ++;
-          // revalidate
-          this._validateAll();
+          this.push('items', data);
         }
-      },
-
-      /**
-       * Render visual control item.
-       *
-       * @param {object} img Image dom object.
-       * @param {object} imgInfo Object of item info.
-       *
-       * @return {object} Dom element.
-       */
-      _renderItem: function(img, imgInfo) {
-        // div.upload-item
-        var divItem = document.createElement('div');
-        divItem.setAttribute('class', 'upload-item');
-        divItem.setAttribute('id', 'item-' + imgInfo.id);
-        // iron image
-        var ironImage = document.createElement('iron-image');
-        ironImage.setAttribute('style', 'width:55px; height:55px;');
-        ironImage.setAttribute('sizing', 'cover'); // contain
-        ironImage.setAttribute('src', img.src);
-        this.listen(ironImage, 'tap', '_onPreview');
-        // div.img-container
-        var divImg = document.createElement('div');
-        divImg.setAttribute('class', 'img-container');
-        divImg.appendChild(ironImage);
-        // div.text-container
-        var divText = document.createElement('div');
-        divText.setAttribute('class', 'text-container');
-        // name
-        var divName = document.createElement('div');
-        divName.setAttribute('class', 'name');
-        divName.innerText = imgInfo.name;
-        divText.appendChild(divName);
-        // details
-        var divDetails = document.createElement('div');
-        divDetails.setAttribute('class', 'text-details');
-        // span.width
-        var spanWidth = document.createElement('span');
-        spanWidth.setAttribute('class', 'width');
-        spanWidth.innerText = imgInfo.width;
-        // span.vs
-        var spanVs = document.createElement('span');
-        spanVs.innerText = ' x ';
-        // span.height
-        var spanHeight = document.createElement('span');
-        spanHeight.setAttribute('class', 'height');
-        spanHeight.innerText = imgInfo.height;
-        // span.separator
-        var spanSeparator = document.createElement('span');
-        spanSeparator.innerText = '  -  ';
-        // aspect ratio
-        var spanRatio = document.createElement('span');
-        spanRatio.setAttribute('class', 'ratio');
-        spanRatio.innerText = this._getLabelAspectRatioBySize(imgInfo.width, imgInfo.height);
-        // span.separator
-        var spanSeparator2 = document.createElement('span');
-        spanSeparator2.innerText = '  -  ';
-        // span.size
-        var spanSize = document.createElement('span');
-        spanSize.setAttribute('class', 'size');
-        spanSize.innerText = this._getLabelSize(imgInfo.size);
-
-        divDetails.appendChild(spanWidth);
-        divDetails.appendChild(spanVs);
-        divDetails.appendChild(spanHeight);
-        divDetails.appendChild(spanSeparator);
-        divDetails.appendChild(spanRatio);
-        divDetails.appendChild(spanSeparator2);
-        divDetails.appendChild(spanSize);
-
-        divText.appendChild(divDetails);
-        // description
-        if (typeof imgInfo.description != 'undefined') {
-          var divDescription = document.createElement('div');
-          divDescription.setAttribute('class', 'text-description');
-          divDescription.innerText = imgInfo.description;
-          divText.appendChild(divDescription);
-        }
-        // div.icons-container
-        var divIcons = document.createElement('div');
-        divIcons.setAttribute('class', 'icons-container');
-        // paper-icon-button (up)
-        var buttonUp = document.createElement('paper-icon-button');
-        buttonUp.setAttribute('icon', 'image-upload-icons:arrow-upward');
-        buttonUp.setAttribute('title', 'Up');
-        buttonUp.setAttribute('class', 'btn-up');
-        this.listen(buttonUp, 'tap', '_onDownItem');
-        divIcons.appendChild(buttonUp);
-        // paper-icon-button (down)
-        var buttonDown = document.createElement('paper-icon-button');
-        buttonDown.setAttribute('icon', 'image-upload-icons:arrow-downward');
-        buttonDown.setAttribute('title', 'Down');
-        buttonDown.setAttribute('class', 'btn-down');
-        this.listen(buttonDown, 'tap', '_onUpItem');
-        divIcons.appendChild(buttonDown);
-        // paper-icon-button (edit)
-        var buttonEdit = document.createElement('paper-icon-button');
-        buttonEdit.setAttribute('icon', 'image-upload-icons:create');
-        buttonEdit.setAttribute('title', 'Edit image');
-        this.listen(buttonEdit, 'tap', '_editItem');
-        divIcons.appendChild(buttonEdit);
-        // paper-icon-button (remove)
-        var buttonRemove = document.createElement('paper-icon-button');
-        buttonRemove.setAttribute('icon', 'image-upload-icons:clear');
-        buttonRemove.setAttribute('title', 'Remove image');
-        this.listen(buttonRemove, 'tap', '_removeItem');
-        divIcons.appendChild(buttonRemove);
-
-        divItem.appendChild(divImg);
-        divItem.appendChild(divText);
-        divItem.appendChild(divIcons);
-
-        return divItem;
       },
 
       /**
@@ -886,60 +640,6 @@
       },
 
       /**
-       * Edit item (open dialog)
-       *
-       * @param {object} e Object of event.
-       */
-      _editItem: function(e) {
-        this.isLoading = true;
-        var id = this._getIdByButtonEvent(e);
-        var item = this._getItemById(id);
-        // open dialog
-        this.$.dialogCrop.open();
-        this.dscCropper = document.createElement('dsc-cropper');
-        this.dscCropper.id = item.id;
-        this.dscCropper.type = item.type;
-        this.dscCropper.name = item.name;
-        this.dscCropper.description = item.description;
-        this.dscCropper.src = item.src;
-        this.dscCropper.aspectRatio = this.computedAspectRatio;
-        this.dscCropper.minWidth = this.minWidth;
-        this.dscCropper.maxWidth = this.aspectRamaxWidthtio;
-        this.dscCropper.minHeight = this.minHeight;
-        this.dscCropper.maxHeight = this.maxHeight;
-        this.dscCropper.regions = this.officesRegions;
-        this.dscCropper.cities = this.officesCities;
-        this.listen(this.dscCropper, 'crop-result', '_onCropResult');
-        this.listen(this.$$('#dialog-crop-confirm'), 'tap', 'crop');
-        // this.$.container.innerHTML = '';
-        Polymer.dom(this.$.container).innerHTML = '';
-        // this.$.container.appendChild(this.dscCropper);
-        Polymer.dom(this.$.container).appendChild(this.dscCropper);
-        this.isLoading = false;
-        Polymer.updateStyles();
-      },
-
-      /**
-       * Remove item from array of itens and UI.
-       *
-       * @param {object} e Object of event.
-       */
-      _removeItem: function(e) {
-        var id = this._getIdByButtonEvent(e);
-        // remove array index
-        for(var i = 0; i < this.items.length; i++) {
-          if (this.items[i].id == id) {
-            this.items.splice(i, 1);
-          }
-        }
-        this.qtdFiles --;
-        // remove ui
-        this.$$('#item-' + id).remove();
-        // revalidate
-        this._validateAll();
-      },
-
-      /**
        * Dialog Aplly click
        */
       crop: function() {
@@ -963,13 +663,13 @@
             this.items[i].name = item.name;
             this.items[i].description = item.description;
             // update ui
-            var currentUi = Polymer.dom(this.root).querySelector('#item-' + item.id);
+            //var currentUi = Polymer.dom(this.root).querySelector('#item-' + item.id);
             var image = new Image();
             image.src = item.src;
-            var divItem = this._renderItem(image, this.items[i]);
-            currentUi.replaceWith(divItem);
+            // var divItem = this._renderItem(image, this.items[i]);
+            // currentUi.replaceWith(divItem);
             // revalidate
-            this._validateAll();
+            // this._validateAll();
           }
         }
       },
@@ -990,19 +690,7 @@
        */
       setData: function(items) {
         // TODO: validate param
-
-        // Order array of items by field 'order'.
-        items.sort(function(a, b) {
-          return parseFloat(a.order) - parseFloat(b.order);
-        });
-        // remove UI items
-        // this.$.itensContainer.innerHTML = '';
-        Polymer.dom(this.$.itensContainer).innerHTML = '';
-        for(var i = 0; i < items.length; i++) {
-          var image = new Image();
-          image.src = items[i].src;
-          this._addItem(image, items[i], items[i].id);
-        }
+        this.items = items;
       },
 
       /**
@@ -1014,9 +702,8 @@
       getData: function() {
         var clone = JSON.parse(JSON.stringify(this.items));
         clone.forEach(function(v) {
-            delete v.errors;
-          }
-        );
+          delete v.errors;
+        });
         return clone;
       },
 

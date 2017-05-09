@@ -1,0 +1,191 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../iron-image/iron-image.html">
+
+<dom-module id="dsc-upload-item">
+
+  <template>
+    <style>
+      .upload-item {
+        display: flex;
+        align-items: center;
+        box-sizing: border-box;
+        font: inherit;
+        outline-width: 0;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -webkit-user-select: none;
+        user-select: none;
+        z-index: 0;
+        padding: 0.7em 0.57em;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .upload-item:first-of-type {
+        margin-top: 15px;
+      }
+
+      .upload-item .img-container {
+        transition: opacity 0.3s;
+        -webkit-transition: opacity 0.3s;
+        cursor: zoom-in;
+      }
+
+      .upload-item .img-container:hover {
+        opacity: 0.5;
+      }
+
+      /*.upload-item:first-of-type .btn-up {
+        display: none;
+      }
+
+      .upload-item:last-of-type .btn-down {
+        display: none;
+      }
+
+      .upload-item:last-of-type .btn-up {
+        margin-right: 40px;
+      }*/
+
+      .high-width .width,
+      .low-width .width,
+      .high-height .height,
+      .low-height .height,
+      .high-size .size,
+      .different-ratio .ratio,
+      .repeated-name .name,
+      .pattern-name .name,
+      .pattern-description .text-description {
+        color: red;
+      }
+
+      .text-container {
+        padding-left: 10px;
+        text-align: left;
+      }
+
+      .text-details {
+        font-size: 10px;
+        color: #666;
+      }
+
+      .text-description {
+        font-size: 10px;
+      }
+
+      .icons-container {
+        margin-left: auto;
+      }
+
+    </style>
+
+    <div class="upload-item " id="item-[[index]]">
+      <div class="img-container" on-tap="_onItemPreview">
+        <iron-image style="width:55px; height:55px;" sizing="cover" src="[[src]]"></iron-image>
+      </div>
+      <div class="text-container">
+        <div class="name">[[name]]</div>
+        <div class="text-details">
+          <span class="width">[[width]]</span>
+          <span> x </span>
+          <span class="height">[[height]]</span>
+          <span>  -  </span>
+          <span class="ratio">[[aspectRatio]]</span>
+          <span>  -  </span>
+          <span class="size">[[size]] KB</span>
+        </div>
+        <div class="text-description">Optional image description</div>
+      </div>
+      <div class="icons-container">
+        <paper-icon-button icon="image-upload-icons:arrow-upward" title="Up" class="btn-up" on-tap="_onItemUp"></paper-icon-button>
+        <paper-icon-button icon="image-upload-icons:arrow-downward" title="Down" class="btn-down" on-tap="_onItemDown"></paper-icon-button>
+        <paper-icon-button icon="image-upload-icons:create" title="Edit image" on-tap="_onItemEdit"></paper-icon-button>
+        <paper-icon-button icon="image-upload-icons:clear" title="Remove image" on-tap="_onItemRemove"></paper-icon-button>
+      </div>
+    </div>
+
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'dsc-upload-item',
+
+      properties: {
+
+        index: {
+          type: String,
+        },
+
+        src: {
+          type: String,
+        },
+
+        name: {
+          type: String,
+        },
+
+        width: {
+          type: Number,
+        },
+
+        height: {
+          type: Number,
+        },
+
+        aspectRatio: {
+          type: String,
+        },
+
+        size: {
+          type: Number,
+        },
+
+      },
+
+      /**
+       * Return item index of button click.
+       *
+       * @param {object} event Object of event.
+       *
+       * @return {string}
+       */
+      _getIndexByButtonEvent: function(event) {
+        var thisButton = event.currentTarget;
+        var parent = thisButton.closest('.upload-item');
+        var attrId = parent.getAttribute('id');
+        var id = attrId.replace('item-', '');
+        return id;
+      },
+
+      _onItemPreview: function(event) {
+        var index = this._getIndexByButtonEvent(event);
+        console.log('_onItemPreview', index);
+        this.fire('item-preview', index);
+      },
+
+      _onItemUp: function(event) {
+        var index = this._getIndexByButtonEvent(event);
+        this.fire('item-up', index);
+      },
+
+      _onItemDown: function(event) {
+        var index = this._getIndexByButtonEvent(event);
+        this.fire('item-down', index);
+      },
+
+      _onItemEdit: function(event) {
+        var index = this._getIndexByButtonEvent(event);
+        console.log('_onItemEdit', index);
+        this.fire('item-edit', index);
+      },
+
+      _onItemRemove: function(event) {
+        var index = this._getIndexByButtonEvent(event);
+        this.fire('item-remove', index);
+      },
+
+
+    });
+  </script>
+</dom-module>

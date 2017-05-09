@@ -88,3 +88,8 @@ $ npm test
  * contrast and brightness
  * separate item in new internal polymer element
  * Tests
+
+ ## LEMBRETES
+  * api soh add se src for base 64
+  * se um item com id possui src com base64 put
+  * api deve comparar lista anterior para ver se falta algum item anterior caso sim delete
