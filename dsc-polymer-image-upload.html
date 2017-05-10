@@ -109,12 +109,13 @@
         <template id="itemsRepeat" is="dom-repeat" items="[[items]]">
           <dsc-upload-item
               index=[[index]]
+              errors="[[_paramErrors(item)]]"
               src="[[item.src]]"
               name="[[item.name]]"
               width="[[item.width]]"
               height="[[item.height]]"
-              aspect-ratio="[[item.aspectRatio]]"
-              size="[[item.size]]"
+              ratio="[[_getLabelAspectRatioBySize(item.width, item.height)]]"
+              size="[[_getLabelSize(item.size)]]"
               on-item-preview="_previewHandler"
               on-item-up="_moveUpHandler"
               on-item-down="_moveDownHandler"
@@ -156,6 +157,14 @@
         },
 
         /**
+         * Flag indicate have one or more errors.
+         */
+        hasError: {
+          type: Boolean,
+          value: false,
+        },
+
+        /**
          * Flag indicate have one or more itens.
          */
         hasImages: {
@@ -168,8 +177,9 @@
          */
         qtdFiles: {
           type: Number,
-          value: 0,
+          computed: '_computedQtdFiles(items.length)',
           observer: '_qtdFilesChanged',
+          notify: true,
         },
 
         /**
@@ -291,6 +301,11 @@
           notify: true,
           reflectToAttribute: true,
         },
+
+      },
+
+      _paramErrors: function(item) {
+        return item.errors || [];
       },
 
       arrayMove: function(array, oldIndex, newIndex) {
@@ -329,18 +344,18 @@
           that.$.dialogPreview.open();
           that.isLoading = false;
         };
-        image.setAttribute('src', this.items[index].src);
+        image.setAttribute('src', this.get(['items', index]).src);
       },
 
       _moveUpHandler: function(event) {
         var index = parseInt(event.detail);
-        this.set('items', this.arrayMove(this.items, index, index - 1));
+        this.set('items', this.arrayMove(this.get('items'), index, index - 1));
         this.$.itemsRepeat.render(); // force refresh
       },
 
       _moveDownHandler: function(event) {
         var index = parseInt(event.detail);
-        this.set('items', this.arrayMove(this.items, index, index + 1));
+        this.set('items', this.arrayMove(this.get('items'), index, index + 1));
         this.$.itemsRepeat.render(); // force refresh
       },
 
@@ -351,13 +366,12 @@
        */
       _editHandler: function(event) {
         var index = parseInt(event.detail);
-        this.isLoading = true;
-        var item = this.items[index];
+        this.set('isLoading', true);
+        var item = this.get(['items', index]);
         // open dialog
-        // TODO: implements dom bind.
         this.$.dialogCrop.open();
         this.dscCropper = document.createElement('dsc-cropper');
-        this.dscCropper.id = item.id;
+        this.dscCropper.index = index;
         this.dscCropper.type = item.type;
         this.dscCropper.name = item.name;
         this.dscCropper.description = item.description;
@@ -369,13 +383,11 @@
         this.dscCropper.maxHeight = this.maxHeight;
         this.dscCropper.regions = this.officesRegions;
         this.dscCropper.cities = this.officesCities;
-        this.listen(this.dscCropper, 'crop-result', '_onCropResult');
+        this.listen(this.dscCropper, 'crop-result', '_cropHandler');
         this.listen(this.$$('#dialog-crop-confirm'), 'tap', 'crop');
-        // this.$.container.innerHTML = '';
         Polymer.dom(this.$.container).innerHTML = '';
-        // this.$.container.appendChild(this.dscCropper);
         Polymer.dom(this.$.container).appendChild(this.dscCropper);
-        this.isLoading = false;
+        this.set('isLoading', false);
         Polymer.updateStyles();
       },
 
@@ -394,15 +406,19 @@
       },
 
       _qtdFilesChanged: function() {
-        this.hasImages = (this.qtdFiles > 0);
-        this.qtdLimitReached = (this.qtdFiles >= this.maxFiles);
+        this.set('hasImages', (this.qtdFiles > 0));
+        this.set('qtdLimitReached', (this.qtdFiles >= this.maxFiles));
+      },
+
+      _computedQtdFiles: function(length){
+        return length;
       },
 
       /**
        * Pending files in queue for processing.
        */
       _qtdPendingFilesChanged: function() {
-        this.isLoading = (this.qtdPendingFiles > 0);
+        this.set('isLoading', (this.qtdPendingFiles > 0));
       },
 
       /**
@@ -410,21 +426,21 @@
        */
       _aspectRatioChanged: function() {
         // TODO: validate format
-        var arr = this.aspectRatio.split(':');
-        this.computedAspectRatio = parseInt(arr[0]) / parseInt(arr[1]);
+        var arr = this.get('aspectRatio').split(':');
+        this.set('computedAspectRatio', parseInt(arr[0]) / parseInt(arr[1]));
       },
 
       /**
        * Proccess files selected in input file.
        *
-       * @param {object} e Object of event.
+       * @param {object} event Object of event.
        */
-      _readFiles: function(e) {
-        this.isLoading = true;
+      _readFiles: function(event) {
+        this.set('isLoading', true);
         var that = this;
         // Let's store the FileList Array into a variable:
         // https://developer.mozilla.org/en-US/docs/Web/API/FileList
-        var files = e.target.files;
+        var files = event.target.files;
         // Let's create an empty `errors` String to collect eventual errors into:
         var errors = '';
         if (! files) {
@@ -432,7 +448,7 @@
         }
         // Check for `files` (FileList) support and if contains at least one file:
         if (files && files[0]) {
-          this.qtdPendingFiles = this.qtdPendingFiles + files.length;
+          this.set('qtdPendingFiles', this.get('qtdPendingFiles') + files.length);
           // Iterate over every File object in the FileList array
           for(var i=0; i < files.length; i++) {
             // Let's refer to the current File as a `file` variable
@@ -452,7 +468,7 @@
         }
         // Notify the user for any errors (i.e: try uploading a .txt file)
         if (errors) {
-          alert(errors);
+          console.error(errors);
         }
       },
 
@@ -468,13 +484,6 @@
         var reader = new FileReader();
         // Once a file is successfully readed:
         reader.addEventListener('load', function() {
-          // At this point `reader.result` contains already the Base64 Data-URL
-          // and we've could immediately show an image using
-          // `elPreview.insertAdjacentHTML("beforeend", "<img src='"+ reader.result +"'>");`
-          // But we want to get that image's width and height px values!
-          // Since the File Object does not hold the size of an image
-          // we need to create a new image and assign it's src, so when
-          // the image is loaded we can calculate it's width and height:
           var image = new Image();
           image.addEventListener('load', function() {
             var imgInfo = {
@@ -484,9 +493,8 @@
               type: file.type,
               size: file.size,
               src: image.src,
+              ratio: that._getAspectRatioBySize(image.width, image.height)
             };
-            // Finally append our created image and the HTML info string to our `#preview`
-            //that._addItem(this, imgInfo);
             that._addItem(imgInfo);
             // If we set the variable `useBlob` to true:
             // (Data-URLs can end up being really large
@@ -519,6 +527,7 @@
         if (this.qtdLimitReached === false) {
           this.push('items', data);
         }
+        this._validateAll();
       },
 
       /**
@@ -531,7 +540,7 @@
        * @return {number} GCD of aspect ratio.
        */
       _gcdBySize: function(width, height) {
-        return (height == 0) ? width : this._gcdBySize(height, width%height);
+        return (height == 0) ? width : this._gcdBySize(height, width % height);
       },
 
       /**
@@ -545,7 +554,7 @@
        */
       _getAspectRatioBySize: function(width, height) {
         var gcd = this._gcdBySize(width, height);
-        return (width/gcd) / (height/gcd);
+        return (width / gcd) / (height / gcd);
       },
 
       /**
@@ -558,7 +567,7 @@
        */
       _getLabelAspectRatioBySize: function(width, height) {
         var gcd = this._gcdBySize(width, height);
-        return width/gcd + ':' + height/gcd;
+        return width / gcd + ':' + height / gcd;
       },
 
       /**
@@ -579,36 +588,37 @@
        * Set errors on items array and UI.
        */
       _validateAll: function() {
+        var auxHasError = false;
         // each all itens
         for(var i = 0; i < this.items.length; i++) {
           // create array of erros
-          var arrStatus = [];
+          var itemErrors = [];
           if (this.maxWidth > 0 && this.items[i].width > this.maxWidth) {
-            arrStatus.push('high-width');
+            itemErrors.push('high-width');
           }
           if (this.minWidth > 0 && this.items[i].width < this.minWidth) {
-            arrStatus.push('low-width');
+            itemErrors.push('low-width');
           }
           if (this.maxHeight > 0 && this.items[i].height > this.maxHeight) {
-            arrStatus.push('high-height');
+            itemErrors.push('high-height');
           }
           if (this.minHeight > 0 && this.items[i].height < this.minHeight) {
-            arrStatus.push('low-height');
+            itemErrors.push('low-height');
           }
           if (this.items[i].size > this.maxFileSize) {
-            arrStatus.push('high-size');
+            itemErrors.push('high-size');
           }
           if (! /^[0-9a-zA-Z\_\-\.]+$/.test(this.items[i].name)) {
-            arrStatus.push('pattern-name');
+            itemErrors.push('pattern-name');
           }
           if (! /^[a-zA-ZçÇãÃáÁàÀéÉêÊíÍõÕóÓôÔúÚ0-9 .,;!@%_-]+$/.test(this.items[i].description)) {
-            arrStatus.push('pattern-description');
+            itemErrors.push('pattern-description');
           }
           // aspect ratio
           var ratio = this._getAspectRatioBySize(this.items[i].width, this.items[i].height);
-          var ratioDiff = Math.abs(ratio - this.computedAspectRatio);
+          var ratioDiff = Math.abs(ratio - this.get('computedAspectRatio'));
           if (ratioDiff > 0.02) {
-            arrStatus.push('different-ratio');
+            itemErrors.push('different-ratio');
           }
           var count = 0;
           for (var j = 0; j < this.items.length; j++) {
@@ -617,26 +627,29 @@
             }
           }
           if (count > 1) {
-            arrStatus.push('repeated-name');
+            itemErrors.push('repeated-name');
           }
           // set errors on items objects
-          this.items[i].errors = arrStatus;
-          // set errors on UI
-          // this.$$('#item-' + this.items[i].id).setAttribute('class', 'upload-item ' + arrStatus.join(' '));
-          Polymer.dom(this.$$('#item-' + this.items[i].id)).setAttribute('class', 'upload-item ' + arrStatus.join(' '));
+          if (itemErrors.length > 0) {
+            this.set('items.' + i + '.errors', itemErrors);
+            auxHasError = true;
+          }
         }
+        this.set('hasError', auxHasError);
       },
 
       /**
-       * Event caled after crop result ok.
+       * Event caled after crop result ok. Update items array and UI.
        *
-       * @param {object} e Object of event.
+       * @param {object} event Object of event.
        */
-      _onCropResult: function(e) {
-        var item = e.detail;
-        this._updateItem(item);
+      _cropHandler: function(event) {
+        var item = event.detail;
+        var index = item.index;
+        delete item[index];
+        this.set('items.' + index, item);
         this.$.dialogCrop.close();
-        // TODO: remove listeners
+        this.dscCropper = {};
       },
 
       /**
@@ -644,34 +657,6 @@
        */
       crop: function() {
         this.dscCropper.crop();
-      },
-
-      /**
-       * Update items array and UI after edit result.
-       *
-       * @param {object} item Item object.
-       */
-      _updateItem: function(item) {
-        // search item
-        for(var i = 0; i < this.items.length; i++) {
-          if (this.items[i].id == item.id) {
-            // update object
-            this.items[i].src = item.src;
-            this.items[i].width = item.width;
-            this.items[i].height = item.height;
-            this.items[i].size = item.size;
-            this.items[i].name = item.name;
-            this.items[i].description = item.description;
-            // update ui
-            //var currentUi = Polymer.dom(this.root).querySelector('#item-' + item.id);
-            var image = new Image();
-            image.src = item.src;
-            // var divItem = this._renderItem(image, this.items[i]);
-            // currentUi.replaceWith(divItem);
-            // revalidate
-            // this._validateAll();
-          }
-        }
       },
 
       /**
@@ -690,7 +675,8 @@
        */
       setData: function(items) {
         // TODO: validate param
-        this.items = items;
+        this.set('items', items);
+        this._validateAll();
       },
 
       /**
@@ -713,14 +699,9 @@
        * @return {boolean}
        */
       isValid: function() {
-        // each all itens
-        for(var i = 0; i < this.items.length; i++) {
-          if (this.items[i].errors.length > 0) {
-            return false;
-          }
-        }
-        return true;
+        return ! this.get('hasError');
       },
+
     });
   </script>
 

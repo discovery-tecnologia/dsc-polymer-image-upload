@@ -102,9 +102,9 @@
       properties: {
 
         /**
-         * Object ID
+         * Index of global array item.
          */
-        id: {
+        index: {
           type: String,
         },
 
@@ -165,7 +165,7 @@
       },
 
       ready: function() {
-        if (!String.format) {
+        if (! String.format) {
           String.format = function(format) {
             var args = Array.prototype.slice.call(arguments, 1);
             return format.replace(/{(\d+)}/g, function(match, number) {
@@ -347,7 +347,7 @@
         var data = this._cropper.getCroppedCanvas().toDataURL(this.type, 0.8);
         var bytes = Math.round(data.length * 3 / 4);
         var result = {
-          id: this.id,
+          index: this.index,
           src: data,
           width: parseInt(this._getCropData('width')),
           height: parseInt(this._getCropData('height')),
@@ -360,6 +360,7 @@
           this.fire('crop-result', result);
         }
       },
+
     });
   </script>
 </dom-module>

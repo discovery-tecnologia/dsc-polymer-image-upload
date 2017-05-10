@@ -6,6 +6,18 @@
 
   <template>
     <style>
+      :host(:first-of-type) .btn-up {
+        display: none;
+      }
+
+      :host(:last-of-type) .btn-down {
+        display: none;
+      }
+
+      :host(:last-of-type) .btn-up {
+        margin-right: 40px;
+      }
+
       .upload-item {
         display: flex;
         align-items: center;
@@ -34,18 +46,6 @@
       .upload-item .img-container:hover {
         opacity: 0.5;
       }
-
-      /*.upload-item:first-of-type .btn-up {
-        display: none;
-      }
-
-      .upload-item:last-of-type .btn-down {
-        display: none;
-      }
-
-      .upload-item:last-of-type .btn-up {
-        margin-right: 40px;
-      }*/
 
       .high-width .width,
       .low-width .width,
@@ -79,7 +79,7 @@
 
     </style>
 
-    <div class="upload-item " id="item-[[index]]">
+    <div class$="[[_computedClass(errors)]]" id="item-[[index]]">
       <div class="img-container" on-tap="_onItemPreview">
         <iron-image style="width:55px; height:55px;" sizing="cover" src="[[src]]"></iron-image>
       </div>
@@ -90,9 +90,9 @@
           <span> x </span>
           <span class="height">[[height]]</span>
           <span>  -  </span>
-          <span class="ratio">[[aspectRatio]]</span>
+          <span class="ratio">[[ratio]]</span>
           <span>  -  </span>
-          <span class="size">[[size]] KB</span>
+          <span class="size">[[size]]</span>
         </div>
         <div class="text-description">Optional image description</div>
       </div>
@@ -117,6 +117,10 @@
           type: String,
         },
 
+        errors: {
+          type: Array,
+        },
+
         src: {
           type: String,
         },
@@ -133,14 +137,21 @@
           type: Number,
         },
 
-        aspectRatio: {
+        ratio: {
           type: String,
         },
 
         size: {
-          type: Number,
+          type: String,
         },
 
+      },
+
+      /**
+       * Compute class more errors.
+       */
+      _computedClass: function() {
+         return 'upload-item ' + this.get('errors').join(' ');
       },
 
       /**
