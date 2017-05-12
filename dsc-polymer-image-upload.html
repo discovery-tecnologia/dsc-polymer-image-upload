@@ -107,20 +107,27 @@
 
       <div id="itensContainer">
         <template id="itemsRepeat" is="dom-repeat" items="[[items]]">
-          <dsc-upload-item
-              index=[[index]]
-              errors="[[_paramErrors(item)]]"
-              src="[[item.src]]"
-              name="[[item.name]]"
-              width="[[item.width]]"
-              height="[[item.height]]"
-              ratio="[[_getLabelAspectRatioBySize(item.width, item.height)]]"
-              size="[[_getLabelSize(item.size)]]"
-              on-item-preview="_previewHandler"
-              on-item-up="_moveUpHandler"
-              on-item-down="_moveDownHandler"
-              on-item-edit="_editHandler"
-              on-item-remove="_removeHandler"></dsc-upload-item>
+          <div
+              draggable="true"
+              on-dragstart="_dragStart"
+              on-dragover="_dragOver"
+              on-dragend="_dragDrop">
+            <dsc-upload-item
+                index=[[index]]
+                errors="[[_paramErrors(item)]]"
+                src="[[item.src]]"
+                name="[[item.name]]"
+                width="[[item.width]]"
+                height="[[item.height]]"
+                ratio="[[_getLabelAspectRatioBySize(item.width, item.height)]]"
+                size="[[_getLabelSize(item.size)]]"
+                description="[[item.description]]"
+                on-item-preview="_previewHandler"
+                on-item-up="_moveUpHandler"
+                on-item-down="_moveDownHandler"
+                on-item-edit="_editHandler"
+                on-item-remove="_removeHandler"></dsc-upload-item>
+            </div>
         </template>
       </div>
 
@@ -302,6 +309,18 @@
           reflectToAttribute: true,
         },
 
+      },
+
+      _dragStart: function(event) {
+        console.log('_dragStart');
+      },
+
+      _dragOver: function(event) {
+        console.log('_dragOver');
+      },
+
+      _dragDrop: function(event) {
+        console.log('_dragDrop');
       },
 
       _paramErrors: function(item) {
@@ -645,8 +664,15 @@
        */
       _cropHandler: function(event) {
         var item = event.detail;
-        var index = item.index;
         delete item[index];
+        var index = item.index;
+        // preserv original id
+        var id = this.get('items.' + index)._id;
+        if (id) {
+          item._id = id;
+        }
+        // set changed flag
+        item.changed = true;
         this.set('items.' + index, item);
         this.$.dialogCrop.close();
         this.dscCropper = {};

@@ -94,7 +94,7 @@
           <span>  -  </span>
           <span class="size">[[size]]</span>
         </div>
-        <div class="text-description">Optional image description</div>
+        <div class="text-description">[[description]]</div>
       </div>
       <div class="icons-container">
         <paper-icon-button icon="image-upload-icons:arrow-upward" title="Up" class="btn-up" on-tap="_onItemUp"></paper-icon-button>
@@ -142,6 +142,10 @@
         },
 
         size: {
+          type: String,
+        },
+
+        description: {
           type: String,
         },
 
