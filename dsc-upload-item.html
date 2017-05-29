@@ -6,18 +6,6 @@
 
   <template>
     <style>
-      :host(:first-of-type) .btn-up {
-        display: none;
-      }
-
-      :host(:last-of-type) .btn-down {
-        display: none;
-      }
-
-      :host(:last-of-type) .btn-up {
-        margin-right: 40px;
-      }
-
       .upload-item {
         display: flex;
         align-items: center;
@@ -31,10 +19,6 @@
         z-index: 0;
         padding: 0.7em 0.57em;
         border-top: 1px solid #e0e0e0;
-      }
-
-      .upload-item:first-of-type {
-        margin-top: 15px;
       }
 
       .upload-item .img-container {
@@ -97,8 +81,6 @@
         <div class="text-description">[[description]]</div>
       </div>
       <div class="icons-container">
-        <paper-icon-button icon="image-upload-icons:arrow-upward" title="Up" class="btn-up" on-tap="_onItemUp"></paper-icon-button>
-        <paper-icon-button icon="image-upload-icons:arrow-downward" title="Down" class="btn-down" on-tap="_onItemDown"></paper-icon-button>
         <paper-icon-button icon="image-upload-icons:create" title="Edit image" on-tap="_onItemEdit"></paper-icon-button>
         <paper-icon-button icon="image-upload-icons:clear" title="Remove image" on-tap="_onItemRemove"></paper-icon-button>
       </div>
@@ -177,16 +159,6 @@
         var index = this._getIndexByButtonEvent(event);
         console.log('_onItemPreview', index);
         this.fire('item-preview', index);
-      },
-
-      _onItemUp: function(event) {
-        var index = this._getIndexByButtonEvent(event);
-        this.fire('item-up', index);
-      },
-
-      _onItemDown: function(event) {
-        var index = this._getIndexByButtonEvent(event);
-        this.fire('item-down', index);
       },
 
       _onItemEdit: function(event) {

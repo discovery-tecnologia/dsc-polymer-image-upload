@@ -52,6 +52,10 @@
         display: none;
       }
 
+      #itensContainer {
+        margin-top: 15px;
+      }
+
       #container {
         width: 500px;
       }
@@ -74,6 +78,19 @@
         margin-left: auto;
         padding-right: 7px;
         font-size: 12px;
+      }
+
+      /* drag styles */
+      #itensContainer > div {
+        border: 2px solid transparent;
+      }
+
+      #itensContainer > [dragstart] {
+        opacity: 0.4;
+      }
+
+      #itensContainer > [over] {
+        border: 2px dashed #333;
       }
     </style>
 
@@ -108,10 +125,13 @@
       <div id="itensContainer">
         <template id="itemsRepeat" is="dom-repeat" items="[[items]]">
           <div
+              data-index$="[[index]]"
               draggable="true"
               on-dragstart="_dragStart"
               on-dragover="_dragOver"
-              on-dragend="_dragDrop">
+              on-dragenter="_dragEnter"
+              on-dragend="_dragEnd"
+              on-dragleave="_dragLeave">
             <dsc-upload-item
                 index=[[index]]
                 errors="[[_paramErrors(item)]]"
@@ -123,8 +143,6 @@
                 size="[[_getLabelSize(item.size)]]"
                 description="[[item.description]]"
                 on-item-preview="_previewHandler"
-                on-item-up="_moveUpHandler"
-                on-item-down="_moveDownHandler"
                 on-item-edit="_editHandler"
                 on-item-remove="_removeHandler"></dsc-upload-item>
             </div>
@@ -309,18 +327,64 @@
           reflectToAttribute: true,
         },
 
+        dragOrigin: {
+          type: Number,
+        },
+
+        dragDestiny: {
+          type: Number,
+        },
+
       },
 
       _dragStart: function(event) {
-        console.log('_dragStart');
+        var el = event.currentTarget;
+        var index = el.getAttribute('data-index');
+        Polymer.dom(el).setAttribute('dragstart', '');
+        this.dragOrigin = index;
+      },
+
+      _dragEnter: function(event) {
+        var el = event.currentTarget;
+        // console.log('_dragEnter', el.getAttribute('data-index'));
       },
 
       _dragOver: function(event) {
-        console.log('_dragOver');
+        var el = event.currentTarget;
+        var index = el.getAttribute('data-index');
+        Polymer.dom(el).setAttribute('over', '');
+        this.dragDestiny = index;
+        if (event.preventDefault) {
+          event.preventDefault(); // Necessary. Allows us to drop.
+        }
+        event.dataTransfer.dropEffect = 'move';  // See the section on the DataTransfer object.
+
+        return false;
       },
 
-      _dragDrop: function(event) {
-        console.log('_dragDrop');
+      _dragLeave: function(event) {
+        var el = event.currentTarget;
+        Polymer.dom(el).removeAttribute('over');
+        this.dragDestiny = undefined;
+      },
+
+      _dragEnd: function(event) {
+        var el = event.currentTarget;
+        Polymer.dom(el).removeAttribute('dragstart');
+        if (this.dragDestiny != undefined) {
+          var destiny = Polymer.dom(this.$.itensContainer).querySelector('[data-index="' + this.dragDestiny +'"]');
+          Polymer.dom(destiny).removeAttribute('over');
+        }
+        this._changePositionEndDrag();
+        this.dragOrigin = undefined;
+        this.dragDestiny = undefined;
+      },
+
+      _changePositionEndDrag: function() {
+        if (this.dragOrigin != undefined && this.dragDestiny != undefined) {
+          this.set('items', this.arrayMove(this.get('items'), this.dragOrigin, this.dragDestiny));
+          this.$.itemsRepeat.render(); // force refresh
+        }
       },
 
       _paramErrors: function(item) {
@@ -364,18 +428,6 @@
           that.isLoading = false;
         };
         image.setAttribute('src', this.get(['items', index]).src);
-      },
-
-      _moveUpHandler: function(event) {
-        var index = parseInt(event.detail);
-        this.set('items', this.arrayMove(this.get('items'), index, index - 1));
-        this.$.itemsRepeat.render(); // force refresh
-      },
-
-      _moveDownHandler: function(event) {
-        var index = parseInt(event.detail);
-        this.set('items', this.arrayMove(this.get('items'), index, index + 1));
-        this.$.itemsRepeat.render(); // force refresh
       },
 
       /**
@@ -676,6 +728,7 @@
         this.set('items.' + index, item);
         this.$.dialogCrop.close();
         this.dscCropper = {};
+        this._validateAll();
       },
 
       /**

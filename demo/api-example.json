@@ -32,9 +32,9 @@
     {
        "_id": "58c4a2189e318abb9a023bb5",
         "src": "images/04.jpg",
-        "width": 1920,
-        "height": 1080,
-        "size": 11881,
+        "width": 2560,
+        "height": 1440,
+        "size": 285042,
         "name": "04.jpg",
         "type": "image/jpeg",
         "description": "Optional image description  for image 4"
