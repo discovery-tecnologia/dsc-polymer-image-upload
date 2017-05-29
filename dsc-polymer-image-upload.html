@@ -129,7 +129,6 @@
               draggable="true"
               on-dragstart="_dragStart"
               on-dragover="_dragOver"
-              on-dragenter="_dragEnter"
               on-dragend="_dragEnd"
               on-dragleave="_dragLeave">
             <dsc-upload-item
@@ -344,10 +343,10 @@
         this.dragOrigin = index;
       },
 
-      _dragEnter: function(event) {
+      /* _dragEnter: function(event) {
         var el = event.currentTarget;
-        // console.log('_dragEnter', el.getAttribute('data-index'));
-      },
+        console.log('_dragEnter', el.getAttribute('data-index'));
+      }, */
 
       _dragOver: function(event) {
         var el = event.currentTarget;
@@ -465,7 +464,7 @@
       _removeHandler: function(event) {
         var index = event.detail;
         this.splice('items', index, 1);
-        this.notifyPath('items',this.items);
+        this.notifyPath('items', this.items);
       },
 
       /**
@@ -481,7 +480,7 @@
         this.set('qtdLimitReached', (this.qtdFiles >= this.maxFiles));
       },
 
-      _computedQtdFiles: function(length){
+      _computedQtdFiles: function(length) {
         return length;
       },
 
@@ -564,7 +563,7 @@
               type: file.type,
               size: file.size,
               src: image.src,
-              ratio: that._getAspectRatioBySize(image.width, image.height)
+              ratio: that._getAspectRatioBySize(image.width, image.height),
             };
             that._addItem(imgInfo);
             // If we set the variable `useBlob` to true:
@@ -590,9 +589,7 @@
       /**
        * Add item to array and call render ui.
        *
-       * @param {object} img Image dom object.
-       * @param {object} imgInfo Object of item info.
-       * @param {string} id ID of item.
+       * @param {object} data Object of item info.
        */
       _addItem: function(data) {
         if (this.qtdLimitReached === false) {

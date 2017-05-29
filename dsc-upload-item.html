@@ -135,6 +135,8 @@
 
       /**
        * Compute class more errors.
+       *
+       * @return {string}
        */
       _computedClass: function() {
          return 'upload-item ' + this.get('errors').join(' ');
@@ -157,13 +159,11 @@
 
       _onItemPreview: function(event) {
         var index = this._getIndexByButtonEvent(event);
-        console.log('_onItemPreview', index);
         this.fire('item-preview', index);
       },
 
       _onItemEdit: function(event) {
         var index = this._getIndexByButtonEvent(event);
-        console.log('_onItemEdit', index);
         this.fire('item-edit', index);
       },
 
@@ -171,7 +171,6 @@
         var index = this._getIndexByButtonEvent(event);
         this.fire('item-remove', index);
       },
-
 
     });
   </script>
