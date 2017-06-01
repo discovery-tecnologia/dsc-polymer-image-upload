@@ -6,7 +6,7 @@
 
 Images crop and upload.
 
-![demo](https://raw.githubusercontent.com/discovery-tecnologia/dsc-polymer-image-upload/master/docs/img/01.jpg)
+![demo](https://raw.githubusercontent.com/discovery-tecnologia/dsc-polymer-image-upload/master/docs/img/01.png)
 ![demo](https://raw.githubusercontent.com/discovery-tecnologia/dsc-polymer-image-upload/master/docs/img/02.jpg)
 
 Differential:
