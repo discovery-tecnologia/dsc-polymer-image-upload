@@ -54,14 +54,15 @@ Example usage:
 
 ### Properties
 
-| Property       | Description                               | Default       |
-|:---------------|-------------------------------------------|---------------|
-| max-files      | Maximum number of files                   | 5             |
-| max-file-size  | Maximum size in bytes per file            | 1024000 (1MB) |
-| min-width      | Minimum image width in pixels             | 320           |
-| max-width      | Maximum image width in pixels             | 1920          |
-| min-height     | Minimum image height in pixels            | 240           |
-| max-height     | Maximum image height in pixels            | 1080          |
+| Property       | Description                                    | Default       |
+|:---------------|------------------------------------------------|---------------|
+| language       | Select component language ('en', 'pt' or 'es') | en            |
+| max-files      | Maximum number of files                        | 5             |
+| max-file-size  | Maximum size in bytes per file                 | 1024000 (1MB) |
+| min-width      | Minimum image width in pixels                  | 320           |
+| max-width      | Maximum image width in pixels                  | 1920          |
+| min-height     | Minimum image height in pixels                 | 240           |
+| max-height     | Maximum image height in pixels                 | 1080          |
 | aspect-ratio   | Force aspect ratio of crop. Ex: 16:9, 4:3, 1:1, 2:3 or 0 for free | 1:1 |
 
 ### Methods
@@ -86,10 +87,4 @@ $ npm test
 
 ## TODO
  * contrast and brightness
- * separate item in new internal polymer element
- * Tests
-
- ## LEMBRETES
-  * api soh add se src for base 64
-  * se um item com id possui src com base64 put
-  * api deve comparar lista anterior para ver se falta algum item anterior caso sim delete
+ * More tests
