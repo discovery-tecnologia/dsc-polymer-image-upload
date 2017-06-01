@@ -28,6 +28,7 @@
   },
   "private": false,
   "dependencies": {
+    "app-localize-behavior": "PolymerElements/app-localize-behavior#^0.10.1",
     "polymer": "polymer/polymer#^1.4.0",
     "cropperjs": "^1.0.0",
     "iron-icon": "^1.0.12",

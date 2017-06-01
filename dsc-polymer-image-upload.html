@@ -1,4 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../app-localize-behavior/app-localize-behavior.html">
 <link rel="import" href="../paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../iron-icon/iron-icon.html">
 <link rel="import" href="../paper-button/paper-button.html">
@@ -22,6 +23,11 @@
 
       #dsc-image-upoload {
         position: relative;
+      }
+
+      #tooltip-help {
+        width: 230px;
+        text-align: left;
       }
 
       #spinnerOverlay {
@@ -57,7 +63,7 @@
       }
 
       #container {
-        width: 500px;
+        max-width: 500px;
       }
 
       #upload-header {
@@ -108,17 +114,17 @@
       <div id="upload-header">
         <paper-button id="btn-select" disabled="[[qtdLimitReached]]" raised class="custom indigo" on-click="_selectFiles">
           <iron-icon icon="image-upload-icons:file-upload"></iron-icon>
-          SELECT FILES
+          [[localize('SELECT_FILES')]]
         </paper-button>
         <div id="label-qtd">
           <iron-icon id="help" icon="image-upload-icons:help-outline"></iron-icon>
-          <paper-tooltip for="help" position="bottom" animation-delay="0">
-            The resulting images must have the following attributes:<br>
-            - <b>Width</b> between <b>{{minWidth}}</b> and <b>{{maxWidth}}</b> px;<br>
-            - <b>Height</b> between <b>{{minHeight}}</b> and <b>{{maxHeight}}</b> px;<br>
-            - Max file <b>size</b> <b>{{maxFileSize}}</b> bytes;
+          <paper-tooltip id="tooltip-help" for="help" position="bottom" animation-delay="0">
+            [[localize('The resulting images must have the following attributes')]]:<br>
+            - <b>[[localize('Width')]]</b> [[localize('between')]] <b>{{minWidth}}</b> [[localize('and')]] <b>{{maxWidth}}</b> px;<br>
+            - <b>[[localize('Height')]]</b> [[localize('between')]] <b>{{minHeight}}</b> [[localize('and')]] <b>{{maxHeight}}</b> px;<br>
+            - [[localize('Max file size')]] <b>{{maxFileSize}}</b> bytes;
           </paper-tooltip>
-          {{qtdFiles}} of {{maxFiles}}
+          {{qtdFiles}} [[localize('of')]] {{maxFiles}}
         </div>
       </div>
 
@@ -132,6 +138,7 @@
               on-dragend="_dragEnd"
               on-dragleave="_dragLeave">
             <dsc-upload-item
+                language="[[language]]"
                 index=[[index]]
                 errors="[[_paramErrors(item)]]"
                 src="[[item.src]]"
@@ -151,15 +158,15 @@
       <paper-dialog id="dialogCrop" modal>
         <div id="container"></div>
         <div class="buttons">
-          <paper-button dialog-confirm autofocus>Cancel</paper-button>
-          <paper-button id="dialog-crop-confirm">Apply</paper-button>
+          <paper-button dialog-confirm autofocus>[[localize('Cancel')]]</paper-button>
+          <paper-button id="dialog-crop-confirm">[[localize('Apply')]]</paper-button>
         </div>
       </paper-dialog>
 
       <paper-dialog id="dialogPreview" modal>
         <div id="previewContainer"></div>
         <div class="buttons">
-          <paper-button dialog-confirm autofocus>Close</paper-button>
+          <paper-button dialog-confirm autofocus>[[localize('Close')]]</paper-button>
         </div>
       </paper-dialog>
 
@@ -170,7 +177,19 @@
     Polymer({
       is: 'dsc-polymer-image-upload',
 
+      behaviors: [
+        Polymer.AppLocalizeBehavior,
+      ],
+
       properties: {
+
+        /**
+         * Define language tranlated. Actual options (en,br,es)
+         */
+        language: {
+          value: 'br',
+          type: String,
+        },
 
         /**
          * Indicate loadind state to show spinner.
@@ -441,6 +460,7 @@
         // open dialog
         this.$.dialogCrop.open();
         this.dscCropper = document.createElement('dsc-cropper');
+        this.dscCropper.language = this.language;
         this.dscCropper.index = index;
         this.dscCropper.type = item.type;
         this.dscCropper.name = item.name;
@@ -742,6 +762,10 @@
         window.URL = window.URL || window.webkitURL;
         this.useBlob = false && window.URL; // Set to `true` to use Blob instead of Data-URL
         this._aspectRatioChanged();
+      },
+
+      attached: function() {
+        this.loadResources(this.resolveUrl('locales.json'));
       },
 
       /**

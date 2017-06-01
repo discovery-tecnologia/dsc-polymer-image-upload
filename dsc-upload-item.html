@@ -1,4 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../app-localize-behavior/app-localize-behavior.html">
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../iron-image/iron-image.html">
 
@@ -81,8 +83,12 @@
         <div class="text-description">[[description]]</div>
       </div>
       <div class="icons-container">
-        <paper-icon-button icon="image-upload-icons:create" title="Edit image" on-tap="_onItemEdit"></paper-icon-button>
-        <paper-icon-button icon="image-upload-icons:clear" title="Remove image" on-tap="_onItemRemove"></paper-icon-button>
+        <paper-icon-button id="bt-edit" icon="image-upload-icons:create" on-tap="_onItemEdit"></paper-icon-button>
+        <paper-tooltip id="tooltip-help" for="bt-edit" position="bottom" animation-delay="0">[[localize('Edit image')]]</paper-tooltip>
+        <paper-icon-button id="bt-remove" icon="image-upload-icons:clear" on-tap="_onItemRemove"></paper-icon-button>
+        <paper-tooltip id="tooltip-help" for="bt-remove" position="bottom" animation-delay="0">[[localize('Remove image')]]</paper-tooltip>
+        <paper-icon-button id="bt-move" icon="image-upload-icons:more-vert"></paper-icon-button>
+        <paper-tooltip id="tooltip-help" for="bt-move" position="bottom" animation-delay="0">[[localize('Hold and drag to reorder')]]</paper-tooltip>
       </div>
     </div>
 
@@ -90,6 +96,10 @@
 
   <script>
     Polymer({
+
+      behaviors: [
+        Polymer.AppLocalizeBehavior,
+      ],
 
       is: 'dsc-upload-item',
 
@@ -170,6 +180,10 @@
       _onItemRemove: function(event) {
         var index = this._getIndexByButtonEvent(event);
         this.fire('item-remove', index);
+      },
+
+      attached: function() {
+        this.loadResources(this.resolveUrl('locales.json'));
       },
 
     });

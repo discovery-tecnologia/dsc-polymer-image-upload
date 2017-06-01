@@ -1,4 +1,6 @@
 <script src="../cropperjs/dist/cropper.min.js"></script>
+<link rel="import" href="../app-localize-behavior/app-localize-behavior.html">
+<link rel="import" href="../paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-input/paper-input.html">
@@ -52,7 +54,7 @@
             maxlength="50"
             auto-validate
             pattern="[a-zA-Z0-9_-]*"
-            error-message="Invalid file name">
+            error-message="[[localize('Invalid file name')]]">
             <div suffix>{{ext}}</div>
           </paper-input>
         </div>
@@ -65,28 +67,33 @@
         <img id="image" src="[[src]]" on-load="_render">
       </div>
 
-      <paper-icon-button icon="image-upload-icons:open-with" on-click="setDragModeMove" title="Drag mode move"></paper-icon-button>
-      <paper-icon-button icon="image-upload-icons:crop" on-click="setDragModeCrop" title="Drag mode crop"></paper-icon-button>
-
-      <paper-icon-button icon="image-upload-icons:zoom-in" on-click="zoomIn" title="Zoom in"></paper-icon-button>
-      <paper-icon-button icon="image-upload-icons:zoom-out" on-click="zoomOut" title="Zoom out"></paper-icon-button>
-
-      <paper-icon-button icon="image-upload-icons:rotate-left" on-click="rotateLeft" title="Rotate left"></paper-icon-button>
-      <paper-icon-button icon="image-upload-icons:rotate-right" on-click="rotateRight" title="Rotate right"></paper-icon-button>
-
-      <paper-icon-button icon="image-upload-icons:flip" on-click="scaleX" title="Flip horizontal"></paper-icon-button>
-      <paper-icon-button icon="image-upload-icons:flip" on-click="scaleY" class="rotate90" title="Flip vertical"></paper-icon-button>
-
-      <paper-icon-button icon="image-upload-icons:refresh" on-click="reset" title="Reset"></paper-icon-button>
+      <paper-icon-button icon="image-upload-icons:open-with" on-click="setDragModeMove" id="bt-mode-move"></paper-icon-button>
+      <paper-tooltip id="tooltip-help" for="bt-mode-move" position="bottom" animation-delay="0">[[localize('Drag mode move')]]</paper-tooltip>
+      <paper-icon-button icon="image-upload-icons:crop" on-click="setDragModeCrop" id="bt-mode-crop"></paper-icon-button>
+      <paper-tooltip id="tooltip-help" for="bt-mode-crop" position="bottom" animation-delay="0">[[localize('Drag mode crop')]]</paper-tooltip>
+      <paper-icon-button icon="image-upload-icons:zoom-in" on-click="zoomIn" id="bt-zoom-in"></paper-icon-button>
+      <paper-tooltip id="tooltip-help" for="bt-zoom-in" position="bottom" animation-delay="0">[[localize('Zoom in')]]</paper-tooltip>
+      <paper-icon-button icon="image-upload-icons:zoom-out" on-click="zoomOut" id="bt-zoom-out"></paper-icon-button>
+      <paper-tooltip id="tooltip-help" for="bt-zoom-out" position="bottom" animation-delay="0">[[localize('Zoom out')]]</paper-tooltip>
+      <paper-icon-button icon="image-upload-icons:rotate-left" on-click="rotateLeft" id="bt-rotate-left"></paper-icon-button>
+      <paper-tooltip id="tooltip-help" for="bt-rotate-left" position="bottom" animation-delay="0">[[localize('Rotate left')]]</paper-tooltip>
+      <paper-icon-button icon="image-upload-icons:rotate-right" on-click="rotateRight" id="bt-rotate-rigth"></paper-icon-button>
+      <paper-tooltip id="tooltip-help" for="bt-rotate-rigth" position="bottom" animation-delay="0">[[localize('Rotate right')]]</paper-tooltip>
+      <paper-icon-button icon="image-upload-icons:flip" on-click="scaleX" id="bt-flip-horizontal"></paper-icon-button>
+      <paper-tooltip id="tooltip-help" for="bt-flip-horizontal" position="bottom" animation-delay="0">[[localize('Flip horizontal')]]</paper-tooltip>
+      <paper-icon-button icon="image-upload-icons:flip" on-click="scaleY" class="rotate90" id="bt-flip-vertical"></paper-icon-button>
+      <paper-tooltip id="tooltip-help" for="bt-flip-vertical" position="bottom" animation-delay="0">[[localize('Flip vertical')]]</paper-tooltip>
+      <paper-icon-button icon="image-upload-icons:refresh" on-click="reset" id="bt-reset"></paper-icon-button>
+      <paper-tooltip id="tooltip-help" for="bt-reset" position="bottom" animation-delay="0">[[localize('Reset')]]</paper-tooltip>
 
       <paper-input
         id="description"
-        label="Description"
+        label="[[localize('Description')]]"
         value="{{description}}"
         maxlength="100"
         auto-validate
         pattern="[a-zA-ZçÇãÃáÁàÀéÉêÊíÍõÕóÓôÔúÚ0-9 .,;!@%_-]*"
-        error-message="Invalid description">
+        error-message="[[localize('Invalid description')]]">
       </paper-input>
 
       <paper-toast id="toast" class="dsc-toast"></paper-toast>
@@ -96,6 +103,10 @@
 
   <script>
     Polymer({
+
+      behaviors: [
+        Polymer.AppLocalizeBehavior,
+      ],
 
       is: 'dsc-cropper',
 
@@ -235,23 +246,23 @@
       _validate: function() {
         var messages = [];
         if (this.width > this.maxWidth) {
-          messages.push(String.format('Image requires maximum width {0}px', this.maxWidth));
+          messages.push(String.format(this.localize('Image requires maximum width {0}px'), this.maxWidth));
         }
         if (this.width < this.minWidth) {
-          messages.push(String.format('Image requires minimum width {0}px', this.minWidth));
+          messages.push(String.format(this.localize('Image requires minimum width {0}px'), this.minWidth));
         }
         if (this.height > this.maxHeight) {
-          messages.push(String.format('Image requires maximum height {0}px', this.maxHeight));
+          messages.push(String.format(this.localize('Image requires maximum height {0}px'), this.maxHeight));
         }
         if (this.height < this.minHeight) {
-          messages.push(String.format('Image requires minimum height {0}px', this.minHeight));
+          messages.push(String.format(this.localize('Image requires minimum height {0}px'), this.minHeight));
         }
         if (! this.$.name.validate()) {
           messages.push('Invalid name');
           this.$.name.focus();
         }
         if (! this.$.description.validate()) {
-          messages.push('Invalid description');
+          messages.push(this.localize('Invalid description'));
           this.$.description.focus();
         }
         if (messages.length > 0) {
@@ -359,6 +370,10 @@
         if (this._validate() == true) {
           this.fire('crop-result', result);
         }
+      },
+
+      attached: function() {
+        this.loadResources(this.resolveUrl('locales.json'));
       },
 
     });
